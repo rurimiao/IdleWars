@@ -1,0 +1,12 @@
+{
+  "name": "idlewars",
+  "private": true,
+  "description": "单文件网页战棋",
+  "scripts": {
+    "build": "./build.sh",
+    "test": "./build.sh && node tests/regress.js"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

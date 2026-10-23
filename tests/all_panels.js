@@ -1,0 +1,6 @@
+const {chromium}=require('playwright');(async()=>{const b=await chromium.launch({executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium'});const p=await b.newPage({viewport:{width:1300,height:900}});const er=[];p.on('pageerror',e=>er.push(e.message));p.on('console',m=>{if(m.type()==='error')er.push(m.text())});await p.goto('file://'+process.argv[2]);await p.waitForTimeout(500);await p.evaluate(()=>document.getElementById('newBtn').click());await p.waitForTimeout(1500);
+await p.click('#bHelp');for(const g of ['turn','ai','sym','more'])await p.click(`button[data-hg="${g}"]`);for(const k of ['styles','aiwhy','colors','symbols','lines','ui','map','tips']){await p.click(`button[data-hs="${k}"]`);await p.waitForTimeout(150)}
+await p.click('#mClose');for(const t of ['info','todo','panel','eco','list','log'])await p.click(`.dtabs button[data-dt="${t}"]`);
+await p.click('#bSet');await p.waitForTimeout(200);await p.click('#mRules');await p.waitForTimeout(300);for(const t of ['units','city','zone','cp']){await p.click(`button[data-rt="${t}"]`)}
+await p.click('#mClose');await p.click('#bStats');await p.waitForTimeout(300);await p.click('#mClose');
+await p.waitForTimeout(8000);console.log('errors',er);await b.close()})()

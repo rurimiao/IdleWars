@@ -1,0 +1,6 @@
+const {chromium}=require('playwright');(async()=>{const b=await chromium.launch({executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium'});const p=await b.newPage({viewport:{width:1400,height:900}});const er=[];p.on('pageerror',e=>er.push(e.message));await p.goto('file://'+process.argv[2]);await p.waitForTimeout(500);
+await p.evaluate(()=>{sHumans.value='1';sPlayers.value=4;sSpeed.value='0.05';sSpeed.dispatchEvent(new Event('change'));newBtn.click()});
+await p.waitForFunction(()=>{const G=__game.G;return G.players[G.cur].human&&!G.busy&&!G.pause},null,{timeout:60000});
+await p.evaluate(()=>{const d=__game,G=d.G,L=G.L.find(l=>l.owner===G.cur&&l.type===0);G.sel=L.cell;const c=[...Array(G.def.length).keys()].find(x=>G.zone[x]>=0&&!G.lg[x]&&d.hexDist(x,L.cell)===1);d.orderMarch(L,c);const C=[...Array(G.def.length).keys()].find(x=>G.def[x]>=200&&G.co[x]===G.cur);G.players[G.cur].stock=99999;for(let i=0;i<9;i++)d.orderBuildUnits(G.cur,C,0,20);G.sel=C;G.ver++;d.ui&&d.ui(true)});
+await p.waitForTimeout(800);
+console.log(await p.evaluate(()=>document.getElementById('todoEco').innerText),'|',await p.evaluate(()=>document.getElementById('ops').innerText.slice(0,900)),er);await p.screenshot({path:process.argv[3]});await b.close()})()
