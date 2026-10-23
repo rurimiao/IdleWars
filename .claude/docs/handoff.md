@@ -159,6 +159,7 @@ const bad = await p.evaluate(() => {
 | `clearing_sim.js` | 6 个电脑国、清算制跑约 80 秒，每 2 秒查一次不变量，还打印几条清算战报样例 | `bad [] errors []` |
 | `ai_sim.js` | 纯电脑模拟：`node tests/ai_sim.js <html> <玩家数> <最大回合> <难度> <大小> <秒>`，环境变量 `FOG=1` 开迷雾；打印回合、城池数、库存、兵团和人数，用来对比改动前后电脑的表现（先对基线再对新版，样本很小只能看大趋势） | 无 `bad` |
 | `ai_capture.js` | 纯电脑攻城验收：`node tests/ai_capture.js <html> [局数] [回合]`，6 家电脑；打印每局开局城易手数（`turned`）、正在被修的（`taking`）、原主的工地数、小兵团数、库存和风格 | 最后一行是每局易手数和平均 |
+| `siege_bench.js` | 攻城实测：`node tests/siege_bench.js <html> [每种次数]`，2 家都由脚本操作，守方不下命令；5 种兵力各打一座 200 的城，打印拿下次数、城墙跌破 200、守军全灭、拿下的平均回合和攻方损失 | 每种一行，最后 `no errors` |
 | `orders_tab.js` | 操作页“没有行动点”“城市已下单”这类原因文字 | 打印出正确的句子 |
 | `clearing_anim.js` / `clearing_status_bar.js` / `clearing_supply_lines.js` | 清算演示：截图、状态栏阶段文字轮询、补给线随每一步的变化和格子表一致性 | 轮询序列里的值按预期变化 |
 | `command_points_params.js` / `command_points_help.js` / `command_points_tab.js` / `command_points_ai.js` | 指挥点：参数页截图、帮助页、操作页标签、电脑下令时指挥点轮询 | 数字随下令减少 |
