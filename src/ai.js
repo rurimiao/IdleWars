@@ -222,7 +222,8 @@
       R.cell = rc;
       const strikers = G.L.filter(x => G._strike[p].has(x.id)); let there = 0, all = 0;
       for (const x of strikers) { all += x.n; if (rc < 0 || hexDist(x.cell, rc) <= 3) there += x.n; }
-      if (rc < 0 || all === 0 || there >= all * 0.6 || G.round - R.since > (act.by === 'you' ? 8 : 14)) R.go = true;
+      if (rc < 0 || all === 0 || there >= Math.min(all, want) * 0.6 ||       // enough at the rally point to go: the ones still far away follow on
+          G.round - R.since > (act.by === 'you' ? 8 : 14)) R.go = true;
     }
     // the siege: while our batteries can work on the garrison, the infantry waits out of the city's reach; it goes in once the garrison is weak, the guns are gone or the siege drags on
     const gar = G.lg[cell] && G.lg[cell].owner !== p ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[p].has(x.id) && x.type === 1);
@@ -347,7 +348,13 @@
       }
       if (!G.lg[go.obj] && G.def[go.obj] > 0 && G.co[go.obj] !== p && hexDist(L.cell, go.obj) <= 6 && orderMarch(L, go.obj)) return;       // an empty city is walked into (a wrecked one is stood on)
       if (L.type === 1) { aiStandOff(L, go.obj, Math.max(T.rmin, 4), T.rmax, inFoeReach); return; }       // batteries: in reach of the city, out of the garrison's
-      if (!go.assault) { aiStandOff(L, go.obj, 4, 4); return; }       // infantry waits just out of the city's reach while the guns work
+      if (!go.assault) { aiStandOff(L, go.obj, 4, 4); return; }
+      // the storm is on: latecomers from far away do not walk in one by one; they meet at the rally point and go in as the next wave
+      if (R && R.cell >= 0 && dObj > 6) {
+        const wave = G.L.filter(x => G._strike[p].has(x.id) && x.type === 0 && hexDist(x.cell, R.cell) <= 3).reduce((a, x) => a + x.n, 0);
+        if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 2).filter(c => !G.lg[c] && !isBlockedCell(c)).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 5)) if (orderMarch(L, c)) return; return; }
+        if (wave < 40) return;
+      }       // infantry waits just out of the city's reach while the guns work
       if (hexDist(L.cell, go.obj) > 2) {
         // the nearest cell we can actually walk to: first around the target itself, then in wider rings (enemy legions can wall a road off)
         for (const r of [2, 4, 6, 9, 12, 16]) {

@@ -669,7 +669,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 .ngr label { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
 .ngav { padding: 0; border: 0; background: none; cursor: pointer; width: 30px; height: 30px; }
 .ngav img { width: 30px; height: 30px; border-radius: 50%; }
-.ngdrawn { color: var(--muted, #999); width: 100%; }
+.ngbtns { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .fognote { margin: 0; padding-left: 10px; border-left: 3px solid var(--line); line-height: 1.5; }
 .btn.big { width: 100%; padding: 12px; font-size: 16px; font-weight: 800; }
 .mbody .form .wide { grid-column: 1 / -1; }
@@ -695,7 +695,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 <div class="wrap">
   <header>
     <div class="hl">
-      <h1><span data-i="title"></span> <small class="ver">v403</small></h1>
+      <h1><span data-i="title"></span> <small class="ver">v404</small></h1>
       <div class="hint" id="hint"><img id="hintImg" alt="" hidden><span id="hintText"></span><span class="widewarn" data-i="wideWarn"></span></div>
     </div>
     <div class="hbtns"><div class="hgrp"><button class="hb hb-cam" id="camBtn"><i></i><span></span></button><span class="hround"><span data-i="turn"></span> <b id="roundNo">1</b></span><button class="hb hb-ff" id="ffBtn" data-i="ffBtn"></button><button class="hb hb-pause" id="pauseBtn"></button></div><div class="hgrp seg"><button class="hb hb-take" id="ctlBtn" data-i="takeOver"></button><button class="hb hb-auto" id="autoBtn" data-i="autoPlay"></button></div><button class="btn alt sm ib" id="bStats" data-it="statsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button><button class="btn alt sm ib" id="bSet" data-it="menuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button class="btn alt sm ib" id="bHelp" data-it="helpTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8"/><path d="M12 17.2h.01"/></svg></button></div>
@@ -800,7 +800,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
           <label class="row"><span data-i="ffNL"></span> <input type="number" id="sFf" min="0" max="999" step="1" value="0" style="width:90px"></label>
           <label class="row"><span data-i="obstacles"></span> <select id="sObs"><option value="few" data-i="o_few"></option><option value="mid" data-i="o_mid" selected></option><option value="many" data-i="o_many"></option></select></label>
         </section>
-        <section class="mg"><h4 data-i="ngSecNations"></h4><p class="note" data-i="ngNationsNote"></p><div class="ngroster" id="ngRoster"></div><button class="btn alt sm" id="ngReroll" data-i="ngReroll"></button></section>
+        <section class="mg"><h4 data-i="ngSecNations"></h4><p class="note" data-i="ngNationsNote"></p><div class="ngroster" id="ngRoster"></div><div class="ngbtns" id="ngStyleBtns"></div><button class="btn alt sm" id="ngReroll" data-i="ngReroll"></button></section>
       </div>
       <div><button class="btn big" id="newBtn" data-i="start"></button></div>
     </div>
@@ -951,8 +951,8 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
         '<b>重炮</b>：炮兵多，要攒更大的队伍才出动；先用炮磨掉守军，步兵再冲。',
         '<b>固守</b>：不主动去打别人的城。',
         '>野战兵力退回城里修城防；谁打了它，它会就近还手。',
-        '<b>随机</b>：在新游戏面板里选，点开始时才抽，抽中什么会写在那一行。',
-        '<b>两个多变开关</b>：每家可以单独打开，名字后面会写出来，例如“稳健 + 动态多变”。',
+        '<b>新游戏面板</b>：每家一行选风格；下面的按钮能一次设成全部某一种，或给每家随机抽一种。',
+        '<b>两个多变开关</b>：每家单独开关，默认都开，名字后面会写出来，例如“稳健+动态多变+局势多变”。',
         '>动态多变：每 10 回合重抽一次风格。',
         '>局势多变：丢了城就转固守；连续 5 回合没挨打、兵力又比别家平均多，就转去进攻。换完 5 回合内不再换。',
         '>每次换风格都会写进战报。',
@@ -960,7 +960,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
         '>风格决定电脑“怎么打”。',
         '>难度调的是它“有多积极”：漏掉行动的概率、兵力规模上限、集结多少兵力才进攻、开火的胆量。',
         '>每个国家的难度和风格都能在“玩家”页它的卡片上单独改。',
-      ], dfl: '默认', nonDefault: '注意：当前参数不是默认值，下面的规则文字按默认值写，以这里为准——', rulesBtn: '兵种与产出', rulesTitle: '兵种与产出参数', rulesNote: '改了立刻生效（包括正在进行的这局），也会用于以后的新游戏。', rangeMin: '射程下限', rangeMax: '射程上限', unitCell: '（格/回合）', zoneOutL: '每个区域的产出', resetParams: '恢复默认', st_random: '随机', ngSecNations: '各国', ngNationsNote: '点头像换一张，名字 2 个字。“随机”在点开始时才抽。玩家那一行的难度、策略和开关只在托管时生效。', ngReroll: '全部重抽', ngHuman: '玩家', ngCpu: '电脑', ngStock: '起始库存', ngFaceTip: '点一下换一张头像', ngNameTip: '国家名，2 个字', ngDrawn: s => `上一局抽到：${s}`,
+      ], dfl: '默认', nonDefault: '注意：当前参数不是默认值，下面的规则文字按默认值写，以这里为准——', rulesBtn: '兵种与产出', rulesTitle: '兵种与产出参数', rulesNote: '改了立刻生效（包括正在进行的这局），也会用于以后的新游戏。', rangeMin: '射程下限', rangeMax: '射程上限', unitCell: '（格/回合）', zoneOutL: '每个区域的产出', resetParams: '恢复默认', st_random: '随机', ngSecNations: '各国', ngNationsNote: '点头像换一张，名字 2 个字。下面的按钮一次设好各家风格。玩家那一行的难度、风格和开关只在托管时生效。', ngReroll: '全部重抽', ngHuman: '玩家', ngCpu: '电脑', ngStock: '起始库存', ngFaceTip: '点一下换一张头像', ngNameTip: '国家名，2 个字', ngAll: s => `全部${s}`, ngRandStyle: '随机风格',
       dynA: '动态多变', dynB: '局势多变', dynATip: '每 10 回合重抽一次策略', dynBTip: '丢了城就转为固守；连续 5 回合没丢城、兵力又比别国平均多，就转回进攻',
       logStyleLost: (a, s) => `${pnameB(a)}丢了城，改为${s}。`, logStyleSafe: (a, s) => `${pnameB(a)}站稳了脚跟，改为${s}。`, logStyleDraw: (a, s) => `${pnameB(a)}换了打法，改为${s}。`,
       st_steady: '稳健', st_wave: '人海', st_heavy: '重炮', st_hold: '固守', castMerge: (p, l, n, m) => `${p}的${l}的${n}人并入${m}。`, evCut: (a, l) => `${pnameB(a)}的${l}补给被切断了！`, evMax: (a, c, n) => `${pnameB(a)}的${c}城防修到上限${n}。`, evCancelMarch: (a, l) => `${pnameB(a)}的${l}行军命令取消：前路走不通。`, evCancelAtk: (a, l, why) => `${pnameB(a)}的${l}攻击命令取消：${why}。`, evGone: '目标已不在了', evNotAlert: '兵团已不在戒备', evOutRange: '目标不在射程内', evCancelRep: (a, l) => `${pnameB(a)}的${l}修城命令取消。`, evZoneOwn: (z, a) => `${z}的产出归${pnameB(a)}独占了。`, evZoneFight: z => `${z}成了争夺区，产出按份额瓜分。`, evZoneNone: z => `${z}没人占了。`, evSplit: (a, l, n, m) => `${pnameB(a)}的${l}拆出${n}人，成立${m}。`, evMerge: (a, l, n, m) => `${pnameB(a)}的${l}的${n}人并入${m}。`, logMarch: (a, l, z1, z2) => `${pnameB(a)}下令${l}从${z1}向${z2}行军。`, logAtkOrder: (a, l, d, t) => `${pnameB(a)}下令${l}攻击${pnameB(d)}的${t}。`, logRepOrder: (a, l, c) => `${pnameB(a)}下令${l}修${c}的城防。`, logBuildOrder: (a, c, n, t) => `${pnameB(a)}在${c}下单造${n}人的${t}。`, evMore: n => `（另有${n}条变化）`, stepL: '电脑每步停留', tabSymbols: '格子符号', uiList: [
@@ -2187,8 +2187,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     rosterSync();                                          // the new-game rows: who plays, face, name, level, style and switches, starting stock
     for (const id of ids) G.players.push({ id, human: NGR[id].human, everHuman: NGR[id].human, stock: NGR[id].stock, pending: [], income: 0, upkeep: 0, alive: true, men: 0, cityCost: 0 });
     G.order = shuffle([...ids]); G.stats = []; G.aiLog = []; applyParams();
-    G.aiStyle = ids.map(i => pickStyle(NGR[i].style));     // "random" is drawn here, and the row shows what came out
-    NGR.forEach((r, i) => { r.drawn = r.style === 'random' ? G.aiStyle[i] : null; });
+    G.aiStyle = ids.map(i => pickStyle(NGR[i].style));     // each row's style, as set (or drawn by the button) in the panel
     G.aiDyn = ids.map(i => ({ a: NGR[i].a, b: NGR[i].b, next: DYN_EVERY + 1 }));
     G.hate = ids.map(() => ids.map(() => 0)); G.intent = ids.map(() => []); G.ihist = []; G.iseq = 0;
     G.aiLevel = ids.map(i => NGR[i].level);
@@ -3200,7 +3199,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       R.cell = rc;
       const strikers = G.L.filter(x => G._strike[p].has(x.id)); let there = 0, all = 0;
       for (const x of strikers) { all += x.n; if (rc < 0 || hexDist(x.cell, rc) <= 3) there += x.n; }
-      if (rc < 0 || all === 0 || there >= all * 0.6 || G.round - R.since > (act.by === 'you' ? 8 : 14)) R.go = true;
+      if (rc < 0 || all === 0 || there >= Math.min(all, want) * 0.6 ||       // enough at the rally point to go: the ones still far away follow on
+          G.round - R.since > (act.by === 'you' ? 8 : 14)) R.go = true;
     }
     // the siege: while our batteries can work on the garrison, the infantry waits out of the city's reach; it goes in once the garrison is weak, the guns are gone or the siege drags on
     const gar = G.lg[cell] && G.lg[cell].owner !== p ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[p].has(x.id) && x.type === 1);
@@ -3325,7 +3325,13 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       }
       if (!G.lg[go.obj] && G.def[go.obj] > 0 && G.co[go.obj] !== p && hexDist(L.cell, go.obj) <= 6 && orderMarch(L, go.obj)) return;       // an empty city is walked into (a wrecked one is stood on)
       if (L.type === 1) { aiStandOff(L, go.obj, Math.max(T.rmin, 4), T.rmax, inFoeReach); return; }       // batteries: in reach of the city, out of the garrison's
-      if (!go.assault) { aiStandOff(L, go.obj, 4, 4); return; }       // infantry waits just out of the city's reach while the guns work
+      if (!go.assault) { aiStandOff(L, go.obj, 4, 4); return; }
+      // the storm is on: latecomers from far away do not walk in one by one; they meet at the rally point and go in as the next wave
+      if (R && R.cell >= 0 && dObj > 6) {
+        const wave = G.L.filter(x => G._strike[p].has(x.id) && x.type === 0 && hexDist(x.cell, R.cell) <= 3).reduce((a, x) => a + x.n, 0);
+        if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 2).filter(c => !G.lg[c] && !isBlockedCell(c)).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 5)) if (orderMarch(L, c)) return; return; }
+        if (wave < 40) return;
+      }       // infantry waits just out of the city's reach while the guns work
       if (hexDist(L.cell, go.obj) > 2) {
         // the nearest cell we can actually walk to: first around the target itself, then in wider rings (enemy legions can wall a road off)
         for (const r of [2, 4, 6, 9, 12, 16]) {
@@ -5344,11 +5350,12 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   // new game dialog: opens by itself when there is nothing to resume
   // ---------- new game: one row per nation (face, name, player or computer, level, style and its two switches, starting stock) ----------
   let NGR = [];
+  const ngStyles = Object.keys(AI_STYLES);       // the styles a row can have; the buttons below the rows set them all at once or draw one for each
   const ngFaces = () => [...AVLIB.list.map(u => ({ img: u, av: -1 })), ...SPECIES.map((_, i) => ({ img: null, av: i }))];
   const ngKey = r => r.img || 'sp' + r.av;
   function ngRow(i) {
     const used = new Set(NGR.map(ngKey)), f = ngFaces().find(x => !used.has(ngKey(x))) || { img: null, av: i % SPECIES.length }, lib = nameLib().nation.filter(n => !NGR.some(r => r.name === n));
-    return { ...f, name: lib.length ? lib[rnd(lib.length)] : spName(f.av >= 0 ? f.av : i % SPECIES.length), human: false, level: 'normal', style: 'random', a: false, b: false, stock: 0 };
+    return { ...f, name: lib.length ? lib[rnd(lib.length)] : spName(f.av >= 0 ? f.av : i % SPECIES.length), human: false, level: 'normal', style: ngStyles[rnd(ngStyles.length)], a: true, b: true, stock: 0 };
   }
   // the rows follow the number of players; the hidden "how many humans" control (also used by the tests) decides who plays when it disagrees with the rows
   function rosterSync() {
@@ -5364,10 +5371,10 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     $('ngRoster').innerHTML = NGR.map((r, i) => `<div class="ngr ${r.human ? 'hum' : ''}" data-r="${i}"><button class="ngav" data-ngav="${i}" title="${tr('ngFaceTip')}"><img src="${ngFaceURL(r)}" alt=""></button>`
       + `<input class="ngnm" data-ngk="name" maxlength="2" value="${esc(r.name)}" title="${tr('ngNameTip')}">`
       + `<select data-ngk="human"><option value="1" ${r.human ? 'selected' : ''}>${tr('ngHuman')}</option><option value="0" ${r.human ? '' : 'selected'}>${tr('ngCpu')}</option></select>`
-      + `<span class="ngai"><select data-ngk="level">${opt(['easy', 'normal', 'hard'], r.level, 'ai_')}</select><select data-ngk="style">${opt(['steady', 'wave', 'heavy', 'hold', 'random'], r.style, 'st_')}</select>`
+      + `<span class="ngai"><select data-ngk="level">${opt(['easy', 'normal', 'hard'], r.level, 'ai_')}</select><select data-ngk="style">${opt(ngStyles, r.style, 'st_')}</select>`
       + `<label title="${tr('dynATip')}"><input type="checkbox" data-ngk="a" ${r.a ? 'checked' : ''}>${tr('dynA')}</label><label title="${tr('dynBTip')}"><input type="checkbox" data-ngk="b" ${r.b ? 'checked' : ''}>${tr('dynB')}</label></span>`
-      + `<label class="ngst">${tr('ngStock')}<input type="number" data-ngk="stock" min="0" max="99999" step="100" value="${r.stock}"></label>`
-      + (r.drawn ? `<small class="ngdrawn">${tr('ngDrawn', tr('st_' + r.drawn))}</small>` : '') + `</div>`).join('');
+      + `<label class="ngst">${tr('ngStock')}<input type="number" data-ngk="stock" min="0" max="99999" step="100" value="${r.stock}"></label>` + `</div>`).join('');
+    $('ngStyleBtns').innerHTML = ngStyles.map(k => `<button class="btn alt sm" data-ngall="${k}">${tr('ngAll', tr('st_' + k))}</button>`).join('') + `<button class="btn alt sm" data-ngall="random">${tr('ngRandStyle')}</button>`;
   }
   $('ngRoster').addEventListener('click', e => {
     const b = e.target.closest('button[data-ngav]'); if (!b) return;
@@ -5386,6 +5393,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     renderRoster();
   });
   $('ngReroll').addEventListener('click', () => { NGR = []; renderRoster(); });
+  $('ngStyleBtns').addEventListener('click', e => { const b = e.target.closest('[data-ngall]'); if (!b) return; const k = b.dataset.ngall; NGR.forEach(r => { r.style = k === 'random' ? ngStyles[rnd(ngStyles.length)] : k; }); renderRoster(); });
   function openNG() { closeModal(); writeForm(); renderRoster(); $('ngClose').hidden = !G; $('ngModal').hidden = false; }
   function closeNG() { $('ngModal').hidden = true; }
   $('ngClose').addEventListener('click', closeNG);

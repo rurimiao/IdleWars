@@ -274,8 +274,7 @@
     rosterSync();                                          // the new-game rows: who plays, face, name, level, style and switches, starting stock
     for (const id of ids) G.players.push({ id, human: NGR[id].human, everHuman: NGR[id].human, stock: NGR[id].stock, pending: [], income: 0, upkeep: 0, alive: true, men: 0, cityCost: 0 });
     G.order = shuffle([...ids]); G.stats = []; G.aiLog = []; applyParams();
-    G.aiStyle = ids.map(i => pickStyle(NGR[i].style));     // "random" is drawn here, and the row shows what came out
-    NGR.forEach((r, i) => { r.drawn = r.style === 'random' ? G.aiStyle[i] : null; });
+    G.aiStyle = ids.map(i => pickStyle(NGR[i].style));     // each row's style, as set (or drawn by the button) in the panel
     G.aiDyn = ids.map(i => ({ a: NGR[i].a, b: NGR[i].b, next: DYN_EVERY + 1 }));
     G.hate = ids.map(() => ids.map(() => 0)); G.intent = ids.map(() => []); G.ihist = []; G.iseq = 0;
     G.aiLevel = ids.map(i => NGR[i].level);

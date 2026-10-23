@@ -478,11 +478,12 @@
   // new game dialog: opens by itself when there is nothing to resume
   // ---------- new game: one row per nation (face, name, player or computer, level, style and its two switches, starting stock) ----------
   let NGR = [];
+  const ngStyles = Object.keys(AI_STYLES);       // the styles a row can have; the buttons below the rows set them all at once or draw one for each
   const ngFaces = () => [...AVLIB.list.map(u => ({ img: u, av: -1 })), ...SPECIES.map((_, i) => ({ img: null, av: i }))];
   const ngKey = r => r.img || 'sp' + r.av;
   function ngRow(i) {
     const used = new Set(NGR.map(ngKey)), f = ngFaces().find(x => !used.has(ngKey(x))) || { img: null, av: i % SPECIES.length }, lib = nameLib().nation.filter(n => !NGR.some(r => r.name === n));
-    return { ...f, name: lib.length ? lib[rnd(lib.length)] : spName(f.av >= 0 ? f.av : i % SPECIES.length), human: false, level: 'normal', style: 'random', a: false, b: false, stock: 0 };
+    return { ...f, name: lib.length ? lib[rnd(lib.length)] : spName(f.av >= 0 ? f.av : i % SPECIES.length), human: false, level: 'normal', style: ngStyles[rnd(ngStyles.length)], a: true, b: true, stock: 0 };
   }
   // the rows follow the number of players; the hidden "how many humans" control (also used by the tests) decides who plays when it disagrees with the rows
   function rosterSync() {
@@ -498,10 +499,10 @@
     $('ngRoster').innerHTML = NGR.map((r, i) => `<div class="ngr ${r.human ? 'hum' : ''}" data-r="${i}"><button class="ngav" data-ngav="${i}" title="${tr('ngFaceTip')}"><img src="${ngFaceURL(r)}" alt=""></button>`
       + `<input class="ngnm" data-ngk="name" maxlength="2" value="${esc(r.name)}" title="${tr('ngNameTip')}">`
       + `<select data-ngk="human"><option value="1" ${r.human ? 'selected' : ''}>${tr('ngHuman')}</option><option value="0" ${r.human ? '' : 'selected'}>${tr('ngCpu')}</option></select>`
-      + `<span class="ngai"><select data-ngk="level">${opt(['easy', 'normal', 'hard'], r.level, 'ai_')}</select><select data-ngk="style">${opt(['steady', 'wave', 'heavy', 'hold', 'random'], r.style, 'st_')}</select>`
+      + `<span class="ngai"><select data-ngk="level">${opt(['easy', 'normal', 'hard'], r.level, 'ai_')}</select><select data-ngk="style">${opt(ngStyles, r.style, 'st_')}</select>`
       + `<label title="${tr('dynATip')}"><input type="checkbox" data-ngk="a" ${r.a ? 'checked' : ''}>${tr('dynA')}</label><label title="${tr('dynBTip')}"><input type="checkbox" data-ngk="b" ${r.b ? 'checked' : ''}>${tr('dynB')}</label></span>`
-      + `<label class="ngst">${tr('ngStock')}<input type="number" data-ngk="stock" min="0" max="99999" step="100" value="${r.stock}"></label>`
-      + (r.drawn ? `<small class="ngdrawn">${tr('ngDrawn', tr('st_' + r.drawn))}</small>` : '') + `</div>`).join('');
+      + `<label class="ngst">${tr('ngStock')}<input type="number" data-ngk="stock" min="0" max="99999" step="100" value="${r.stock}"></label>` + `</div>`).join('');
+    $('ngStyleBtns').innerHTML = ngStyles.map(k => `<button class="btn alt sm" data-ngall="${k}">${tr('ngAll', tr('st_' + k))}</button>`).join('') + `<button class="btn alt sm" data-ngall="random">${tr('ngRandStyle')}</button>`;
   }
   $('ngRoster').addEventListener('click', e => {
     const b = e.target.closest('button[data-ngav]'); if (!b) return;
@@ -520,6 +521,7 @@
     renderRoster();
   });
   $('ngReroll').addEventListener('click', () => { NGR = []; renderRoster(); });
+  $('ngStyleBtns').addEventListener('click', e => { const b = e.target.closest('[data-ngall]'); if (!b) return; const k = b.dataset.ngall; NGR.forEach(r => { r.style = k === 'random' ? ngStyles[rnd(ngStyles.length)] : k; }); renderRoster(); });
   function openNG() { closeModal(); writeForm(); renderRoster(); $('ngClose').hidden = !G; $('ngModal').hidden = false; }
   function closeNG() { $('ngModal').hidden = true; }
   $('ngClose').addEventListener('click', closeNG);
