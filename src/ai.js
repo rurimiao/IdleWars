@@ -46,7 +46,7 @@
     if (attach && STEPS && STEPS.length) STEPS[STEPS.length - 1].note = n; else pushNote(n);
   }
   // what a big city is worth to the computer: a high base, plus the zone's output it sits in and its defense
-  const STRIKE_MEN = 120, STRIKE_ARTS = 3, STRIKE_REACH = 16;       // a strike on a city: six full infantry legions and three batteries, gathered from within 16 cells of it
+  const STRIKE_MEN = 120, STRIKE_ARTS = 3, STRIKE_REACH = 16;       // a strike on a city: six full infantry legions and three batteries, gathered from within 16 cells of it (or 8 cells beyond our nearest city when that is farther)
   const wreckOrCity = c => G.def[c] >= CITY_MIN || (G.wasCity[c] && G.def[c] > 0);       // a city knocked below the threshold is still worth taking (or getting back)
   const cityPrize = c => 600 + ((G.Z[G.zone[c]] && G.Z[G.zone[c]].out) || 0) * 1.5 + G.def[c] * 0.5;       // zones belong to whoever holds the cities in them: a captured city takes its share of the zone along
   // how much of a choke point a cell is: few open neighbours (1 to 6 pass cells around it)
@@ -184,7 +184,7 @@
         const cs = G.land.filter(i => wreckOrCity(i) && G.co[i] !== p && G.co[i] >= 0);
         // a city close to our own land, weakly held: the distance counts a lot and the defenders around it (not only the garrison) are weighed in
         const mine = cities(p), local = i => { let n = 0; for (const F of foes) if (hexDist(F.cell, i) <= 4) n += F.type === 0 ? F.n : F.n * 1.5; return n; };
-        let best = -1, bd = -1e18; for (const i of cs) { const dOwn = mine.length ? Math.min(...mine.map(q => hexDist(q, i))) : 99; if (dOwn > 14) continue; const sc = cityPrize(i) - dOwn * 40 - local(i) * 6 - G.def[i] * 0.4; if (sc > bd) { bd = sc; best = i; } }
+        let best = -1, bd = -1e18; for (const i of cs) { const dOwn = mine.length ? Math.min(...mine.map(q => hexDist(q, i))) : 99; const sc = cityPrize(i) - dOwn * 40 - local(i) * 6 - G.def[i] * 0.4; if (sc > bd) { bd = sc; best = i; } }
         if (best >= 0) { addIntent(p, 'city', best, 'ai', tr('itHistFormCity', Math.round(cityPrize(best)))); aiNote(p, tr('aiStrike', cityName(best), Math.round(force)), 'c:' + best); }
       }
     }
@@ -198,7 +198,8 @@
     const want = peaceful ? 30 : act.by === 'you' ? 1e9 : Math.max(need, (near + 20) * 1.8, act.k === 'city' ? STRIKE_MEN : 0);       // about twice what holds the ground round the target, and for a city at least six full legions (what took a starting city in tests/siege_bench.js)
     // the strike force keeps its members from one turn to the next (so legions do not keep joining and leaving); the nearest field infantry fills it up to what is wanted
     const keep = act.id === prevFor ? field.filter(x => prevStrike.has(x.id)) : [];
-    let sum = 0, nInf = 0; for (const x of [...keep, ...field.filter(x => !keep.includes(x) && hexDist(x.cell, cell) <= STRIKE_REACH).sort((a, b) => hexDist(a.cell, cell) - hexDist(b.cell, cell))]) { if (sum >= want && (act.by !== 'you' || peaceful)) break; G._strike[p].add(x.id); sum += x.n; nInf++; x.hoard = 10; }       // carry a full load of food: the march is long
+    const mineC = cities(p), reach = Math.max(STRIKE_REACH, (mineC.length ? Math.min(...mineC.map(q => hexDist(q, cell))) : 0) + 8);       // far from our land (big maps, few nations) the force comes from round our nearest city
+    let sum = 0, nInf = 0; for (const x of [...keep, ...field.filter(x => !keep.includes(x) && hexDist(x.cell, cell) <= reach).sort((a, b) => hexDist(a.cell, cell) - hexDist(b.cell, cell))]) { if (sum >= want && (act.by !== 'you' || peaceful)) break; G._strike[p].add(x.id); sum += x.n; nInf++; x.hoard = 10; }       // carry a full load of food: the march is long
     // a city held far too strongly for what we can bring is given up after a while, so the force can go for a softer one
     if (!peaceful && act.by === 'ai') {
       act.hard = near > sum * 1.2 ? (act.hard || 0) + 1 : 0;
@@ -210,7 +211,7 @@
     }
     // batteries go along to break the walls: about one for every two infantry legions, the nearest ones
     if (!peaceful) {
-      const arts = G.L.filter(x => x.owner === p && x.type === 1 && !x.dead && !isCity(x.cell) && x.n >= TYPES[1].min && hexDist(x.cell, cell) <= 16).sort((a, b) => (prevStrike.has(b.id) && act.id === prevFor) - (prevStrike.has(a.id) && act.id === prevFor) || hexDist(a.cell, cell) - hexDist(b.cell, cell));
+      const arts = G.L.filter(x => x.owner === p && x.type === 1 && !x.dead && !isCity(x.cell) && x.n >= TYPES[1].min && hexDist(x.cell, cell) <= reach).sort((a, b) => (prevStrike.has(b.id) && act.id === prevFor) - (prevStrike.has(a.id) && act.id === prevFor) || hexDist(a.cell, cell) - hexDist(b.cell, cell));
       for (const x of arts.slice(0, Math.max(STRIKE_ARTS, Math.ceil(nInf / 2)))) { G._strike[p].add(x.id); x.hoard = 10; }
     }
     // gather first, strike together: a rally point on supplied, uncovered ground not too far from the target; the assault starts when most of the force is there
@@ -287,19 +288,24 @@
     }
     return out;
   }
+  // a march the computer gives only when the road is not a long way round (a pass held by the enemy can make the road to a cell next door fifty cells long)
+  function aiMarch(L, c) {
+    const r = planRoute(L, c); if (!r || r.cost > hexDist(L.cell, c) * 2 + 4) return false;
+    return orderMarch(L, c);
+  }
   // walk to the nearest free cell at a distance from lo to hi of `c` (stays put when already there); true when an order was given or none is needed.
   // When no such cell is free (or `avoid` rules them all out) it tries again without `avoid`, and when still nothing fits it at least walks closer
   function aiStandOff(L, c, lo, hi, avoid) {
     const d0 = hexDist(L.cell, c); if (d0 >= lo && d0 <= hi && !(avoid && avoid(L.cell))) return true;
     for (const av of avoid ? [avoid, null] : [null]) {
       const cs = within(c, hi).filter(q => { const d = hexDist(q, c); return d >= lo && !G.lg[q] && !isBlockedCell(q) && !(av && av(q)); }).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b));
-      let tries = 0; for (const q of cs) { if (tries++ > 6) break; if (orderMarch(L, q)) return true; }
+      let tries = 0; for (const q of cs) { if (tries++ > 6) break; if (aiMarch(L, q)) return true; }
       if (av === null && d0 >= lo && d0 <= hi) return true;
     }
     if (d0 <= hi) return false;
     for (const r of [hi + 2, hi + 4, hi + 7, hi + 11]) {
       const cs = within(c, r).filter(q => !G.lg[q] && !isBlockedCell(q) && hexDist(q, c) >= lo && hexDist(q, c) < d0).sort((a, b) => hexDist(a, c) - hexDist(b, c) || hexDist(L.cell, a) - hexDist(L.cell, b));
-      let tries = 0; for (const q of cs) { if (tries++ > 6) break; if (orderMarch(L, q)) return true; }
+      let tries = 0; for (const q of cs) { if (tries++ > 6) break; if (aiMarch(L, q)) return true; }
     }
     return false;
   }
@@ -363,7 +369,7 @@
       if (gar) { orderAttack(L, gar); return; }
       if (ts.length && !(L.type === 1 && R && R.go && dObj > T.rmax && !foes.some(F => F.type === 0 && hexDist(L.cell, F.cell) <= 2))) { const t = aiPickTarget(L, ts); if (t) { orderAttack(L, t); return; } }
       if (R && !R.go && R.cell >= 0) {       // still gathering: walk to the rally point and wait there
-        if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 3).filter(c => !G.lg[c] && !isBlockedCell(c) && hexDist(c, go.obj) >= 4).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 8)) if (orderMarch(L, c)) return; }       // a big force needs room: anywhere within 3 of the rally point, out of the city's reach
+        if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 3).filter(c => !G.lg[c] && !isBlockedCell(c) && hexDist(c, go.obj) >= 4).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 8)) if (aiMarch(L, c)) return; }       // a big force needs room: anywhere within 3 of the rally point, out of the city's reach
         return;
       }
       if (!G.lg[go.obj] && G.def[go.obj] > 0 && G.co[go.obj] !== p && hexDist(L.cell, go.obj) <= 6 && orderMarch(L, go.obj)) return;       // an empty city is walked into (a wrecked one is stood on)
@@ -372,14 +378,14 @@
       // the storm is on: latecomers from far away do not walk in one by one; they meet at the rally point and go in as the next wave
       if (R && R.cell >= 0 && dObj > 6) {
         const wave = G.L.filter(x => G._strike[p].has(x.id) && x.type === 0 && hexDist(x.cell, R.cell) <= 3).reduce((a, x) => a + x.n, 0);
-        if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 2).filter(c => !G.lg[c] && !isBlockedCell(c)).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 5)) if (orderMarch(L, c)) return; return; }
+        if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 2).filter(c => !G.lg[c] && !isBlockedCell(c)).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 5)) if (aiMarch(L, c)) return; return; }
         if (wave < 40) return;
       }       // infantry waits just out of the city's reach while the guns work
       if (hexDist(L.cell, go.obj) > 2) {
         // the nearest cell we can actually walk to: first around the target itself, then in wider rings (enemy legions can wall a road off)
         for (const r of [2, 4, 6, 9, 12, 16]) {
           const cs = within(go.obj, r).filter(c => !G.lg[c] && !isBlockedCell(c) && hexDist(c, go.obj) <= r && hexDist(L.cell, c) < hexDist(L.cell, go.obj) + 1).sort((a, b) => hexDist(a, go.obj) - hexDist(b, go.obj) || hexDist(L.cell, a) - hexDist(L.cell, b));
-          let tries = 0; for (const c of cs) { if (tries++ > 6) break; if (orderMarch(L, c)) return; }
+          let tries = 0; for (const c of cs) { if (tries++ > 6) break; if (aiMarch(L, c)) return; }
         }
       }
       return;
