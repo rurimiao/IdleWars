@@ -46,7 +46,7 @@ const SETUPS = [
                 if (t && d.attackNow(L, t)) continue;
               }
               if (L.st === 'march' && L.tgt != null) continue;
-              if (!G.lg[tc] && L.type === 0 && G.def[tc] < 200) { if (d.orderMarch(L, tc)) continue; }
+              if (!G.lg[tc] && L.type === 0) { if (d.orderMarch(L, tc)) continue; }
               if (L.type === 1) { const dd = H(L.cell, tc); if (dd >= 4 && dd <= 5) continue; const c = d.within(tc, 5).filter(c => H(c, tc) >= 4 && free(c)).sort((a, b) => H(L.cell, a) - H(L.cell, b))[0]; if (c != null) d.orderMarch(L, c); continue; }
               const c = d.within(tc, 2).filter(c => c !== tc && free(c)).sort((a, b) => H(L.cell, a) - H(L.cell, b) || H(a, tc) - H(b, tc))[0];
               if (c != null && H(L.cell, tc) > 1) d.orderMarch(L, c);
@@ -56,7 +56,7 @@ const SETUPS = [
           while (d.G.busy) await new Promise(ok => setTimeout(ok, 30));
           G = d.G;
           const g = G.lg[tc]; if (!garDead && !(g && g.owner === 1)) garDead = G.round;
-          if (!wallAt && G.def[tc] < 200) wallAt = G.round;
+          if (!wallAt && !d.isCity(tc)) wallAt = G.round;
           if (g && g.owner === 0) taken = G.round;
         }
         const men1 = atk.filter(L => !L.dead).reduce((a, L) => a + L.n * (L.type ? 4 : 1), 0);
@@ -65,7 +65,7 @@ const SETUPS = [
       res.push(r);
     }
     const ok = res.filter(r => r.taken >= 0), avg = (a, k) => a.length ? (a.reduce((s, r) => s + r[k], 0) / a.length).toFixed(1) : '-';
-    console.log(`${su.name}: 拿下 ${ok.length}/${res.length} 次；守军全灭平均第 ${avg(res.filter(r => r.garDead >= 0), 'garDead')} 回合；城墙跌破 200 平均第 ${avg(res.filter(r => r.wallAt >= 0), 'wallAt')} 回合；拿下平均第 ${avg(ok, 'taken')} 回合；攻方损失(步兵人数，炮兵按 4 人算) ${avg(res, 'lost')}；收尾城防 ${avg(res, 'wall')}；指挥点 ${res[0].cp}`);
+    console.log(`${su.name}: 拿下 ${ok.length}/${res.length} 次；守军全灭平均第 ${avg(res.filter(r => r.garDead >= 0), 'garDead')} 回合；城墙跌破门槛 平均第 ${avg(res.filter(r => r.wallAt >= 0), 'wallAt')} 回合；拿下平均第 ${avg(ok, 'taken')} 回合；攻方损失(步兵人数，炮兵按 4 人算) ${avg(res, 'lost')}；收尾城防 ${avg(res, 'wall')}；指挥点 ${res[0].cp}`);
   }
   console.log(errs.length ? 'errors ' + JSON.stringify(errs.slice(0, 3)) : 'no errors');
   await b.close();

@@ -20,7 +20,7 @@
     { k: 'art', rmin: 2, rmax: 5, cb: 1, hit: 30, dmg: 3, per: 3, min: 3, cap: 10, cost: 80, build: 3, eat: 8, take: true, budget: 1, bsp: 5, sg: 4 },
   ];
   let CITY_START = 200, CITY_MAX = 1000;       // set from the parameters: size of a new city, the cap for everyone
-  let CITY_MIN = 200;       // a cell is a big city from this size, which is the starting city size (set from the parameters); smaller is a building site
+  let CITY_MIN = 200;       // a cell is a big city from this size (set from the parameters; the starting cities begin above it); smaller is a building site
   let BUILD_COST = 5;       // supplies a legion spends per point of city size it builds (set from the parameters)   // city defense: a cell is a big city from CITY_MIN (200) points, the cap is 1000
   const ZONE_OUT = 200;                                   // every zone yields the same each turn
   const ZONE_NONE = '#cfd2cf', ZONE_FIGHT = '#e0847c';    // zone ground: nobody holds shares / two or more nations contest it (a lone holder gets a light tint of its color)
