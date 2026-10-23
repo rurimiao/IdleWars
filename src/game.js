@@ -87,20 +87,6 @@
   const bk = s => '【' + s + '】';       // names of places and legions sit in brackets inside sentences
   const nameRef = a => (a.lg != null ? bk(lnameById(a.lg)) : a.ct != null ? cm(cityName(a.ct)) : a.zn != null ? zoneName(a.zn) : '?');      // only legions and nations get brackets; place names stay plain
   const logText = m => tr(m.key, ...m.args.map(a => (a && typeof a === 'object' ? nameRef(a) : a)));
-  function renameThing(kind, id, text) {
-    text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX); if (!text) return false;
-    const v = viewer(); let old, L = null;
-    if (kind === 'z') { if (!G.zname || G.zname[id] == null) return false; old = G.zname[id]; }
-    else if (kind === 'c') { if (G.co[id] !== v || G.def[id] < CITY_MIN) return false; old = cityName(id); }
-    else { L = G.L.find(x => x.id === id); if (!L || L.owner !== v) return false; old = lname(L); }
-    if (old === text) return false;
-    if (kind === 'z') G.zname[id] = text; else if (kind === 'c') G.cname[id] = text; else { L.name = text; if (G.lgInfo[id]) G.lgInfo[id].name = text; }
-    const key = kind + id; (G.nhist[key] = G.nhist[key] || []).push({ r: G.round, p: v, a: old, b: text });
-    if (G.nhist[key].length > 20) G.nhist[key].shift();
-    const wrap = s => (kind === 'l' ? bk(s) : kind === 'c' ? cm(s) : s);
-    logMsg('logRename', [G.round, pnameB(v), wrap(old), wrap(text)], v);
-    return true;
-  }
   const isBlockedCell = i => G.zone[i] < 0;
   const isCity = i => G.def[i] >= CITY_MIN;
   const linked = (a, b) => { for (let e = 0; e < 6; e++) if (G.link[a * 6 + e] === b) return true; return false; };
@@ -205,7 +191,7 @@
     const o = G.co[c];
     if (o >= 0) st(o)[17]++;
     if (o >= 0) { dropOrders(o, c, 'orderWhyGone'); logMsg('logCityGone', [o], o); }
-    G.def[c] = 0; G.co[c] = -1;
+    G.def[c] = 0; G.co[c] = -1; G.wasCity[c] = 0;
     for (const L of G.L) if (L.bld && L.cell === c) L.bld = false;
     touch();
   }
@@ -244,6 +230,7 @@
     const lg = new Array(total).fill(null);
     for (const L of g.L) { L.dead = false; lg[L.cell] = L; }
     G = { ...g, Z, phys, link: Int32Array.from(phys), X, Y, lg, cv: null, cvVer: 0, fx: [], pops: [], cp: [], reach: [], aiRunning: false, busy: false, sel: -1, hover: -1, mode: null, focus: -1, flash: '', blink: -1, gid: ++gameSeq, ver: (g.ver || 0) + 1 };
+    if (!G.wasCity) { G.wasCity = new Uint8Array(total); for (let c = 0; c < total; c++) if (G.def[c] >= CITY_MIN) G.wasCity[c] = 1; }       // saves from before the one-time new-city bonus
     if (!Array.isArray(G.aiStyle) || G.aiStyle.length !== G.players.length) G.aiStyle = G.players.map(() => pickStyle('random'));       // saves from before computer styles
     if (!Array.isArray(G.hate) || G.hate.length !== G.players.length) G.hate = G.players.map(() => G.players.map(() => 0));
     if (!Array.isArray(G.intent) || G.intent.length !== G.players.length) G.intent = G.players.map(() => []);
@@ -272,7 +259,7 @@
     const g = genWorld(P, cpp, VOID_SHARE[S.obs] || 0.3, 6);
     const total = COLS * ROWS;
     G = { Z: g.Z, zone: g.zone, phys: g.phys, link: g.link, X: g.X, Y: g.Y, land: g.land, owner: g.owner, gap: g.gap,
-      lg: new Array(total).fill(null), def: new Uint16Array(total), co: new Int16Array(total).fill(-1), cpEvery: S.chk || 50, cpCount: 0, promptedAt: 0, zname: [], zpre: [], cname: {}, lgInfo: {}, nhist: {},
+      lg: new Array(total).fill(null), def: new Uint16Array(total), wasCity: new Uint8Array(total), co: new Int16Array(total).fill(-1), cpEvery: S.chk || 50, cpCount: 0, promptedAt: 0, zname: [], zpre: [], cname: {}, lgInfo: {}, nhist: {},
       L: [], ship: [], nid: 1, seq: Array.from({ length: P }, () => [0, 0]), cur: 0, round: 1, sel: -1, hover: -1, mode: null, busy: false, over: false, log: [], players: [], order: [],
       gid: ++gameSeq, clearing: !!S.clr, ver: 1, blink: -1, cv: null, cvVer: 0, reach: [], speedMul: 1, fx: [], pops: [], cp: [], nameAt: [], flash: '', splitN: 1, aiRunning: false, focus: -1 };
     const combos = []; for (const a of ZPRE) for (const b of ZSUF) combos.push([a, b]);
@@ -295,7 +282,7 @@
       let sx = 0, sy = 0; for (const c of all) { sx += G.X[c]; sy += G.Y[c]; } sx /= all.length; sy /= all.length;
       G.nameAt[p] = [sx, sy];
       const picks = G.Z.filter(z => z.home === p && z.cells.length).map(z => z.ai);          // one big city in the middle of each of the nation's zones
-      for (const c of picks) { G.def[c] = CITY_START; G.co[c] = p; cityName(c); }
+      for (const c of picks) { G.def[c] = CITY_START; G.wasCity[c] = 1; G.co[c] = p; cityName(c); }
     }
     // starting armies: a legion on every city and one beside it, plus a battery
     for (const p of ids) {
@@ -375,7 +362,7 @@
     return !!planRoute(L, tgt);
   }
   function routeTurns(L, tgt) { const r = planRoute(L, tgt); return r ? Math.max(1, Math.ceil(r.cost / typ(L).budget)) : -1; }
-  // command points: a base + for every city the nation owns, its defense ÷ a divisor (rounded down; both are on the params page). A legion's order costs 1; one order given to a whole group costs 1 for the group;
+  // command points: a base + for every city the nation owns, its defense ÷ a divisor (rounded down; both are on the params page). A legion's order costs 1;
   // receiving men in a merge and the new legion of a split cost nothing; cancelling an order gives the point back (it is counted from the legions, not stored)
   let _cpKey = '', _cpMax = [], _cpG = null;
   const cpMax = p => {
@@ -430,27 +417,30 @@
   }
   function orderRepair(L) { if (!canRepair(L)) return false; snap(L); L.bld = true; L.acted = true; logMsg('logRepOrder', [L.owner, { lg: L.id }, { ct: L.cell }], L.owner, true); rec({ k: 'rep', id: L.id, p: L.owner, cell: L.cell, to: -1 }); touch(); return true; }
   function orderHoard(L, n) { if (L.owner === G.cur) { L.hoard = n; return true; } return false; }
-  // split off amt men to an adjacent empty cell (a new legion, both halves need the minimum) or into an adjacent friendly legion of the same type (a merge)
+  // split off amt men to an adjacent empty cell (a new legion, both halves need the minimum) or into an adjacent friendly legion of the same type (a merge: all the men may go, or what stays needs the minimum)
+  // legions that split, take men or are split off do not fire this round
   function orderSplit(L, amt, cell) {
     const T = typ(L); let splitInfo = null;
-    if (!canAct(L) || amt < 1 || amt >= L.n || !linked(L.cell, cell) || isBlockedCell(cell)) return false;
+    if (!canAct(L) || amt < 1 || amt > L.n || !linked(L.cell, cell) || isBlockedCell(cell)) return false;
     const O = G.lg[cell];
     if (O) {
       if (O.owner !== L.owner || O.type !== L.type || (O.acted && !O.recvN) || O.n >= T.cap) return false;       // a legion that already took men in this turn takes more without another action point
-      const x = Math.min(amt, T.cap - O.n), share = Math.floor(L.sup * x / L.n);
-      O.n += x; O.sup += share; L.n -= x; L.sup -= share; O.recvN = (O.recvN || 0) + 1; if (!O.acted) O.cpFree = true; O.acted = true; O.why = ['apMerge', L.id]; splitInfo = { amt: x, tid: O.id }; L.undo = { split: { tid: O.id, amt: x, share, merge: true } };
+      const x = Math.min(amt, T.cap - O.n), share = x === L.n ? L.sup : Math.floor(L.sup * x / L.n);
+      if (L.n - x > 0 && L.n - x < T.min) return false;
+      O.n += x; O.sup += share; L.n -= x; L.sup -= share; O.recvN = (O.recvN || 0) + 1; if (!O.acted) O.cpFree = true; O.acted = true; O.splitRound = G.round; O.why = ['apMerge', L.id]; splitInfo = { amt: x, tid: O.id }; L.undo = { split: { tid: O.id, amt: x, share, merge: true } };
     } else {
       if (amt < T.min || L.n - amt < T.min) return false;
       const share = Math.floor(L.sup * amt / L.n);
-      const N = mkLegion(L.owner, L.type, amt, cell, { sup: share, hoard: L.hoard, acted: true, cpFree: true });
+      const N = mkLegion(L.owner, L.type, amt, cell, { sup: share, hoard: L.hoard, acted: true, cpFree: true, splitRound: G.round });
       N.why = ['apSplit', L.id]; splitInfo = { amt, tid: N.id };
       L.undo = { split: { tid: N.id, amt, share, merge: false } };
       N.mv = { from: L.cell, t0: performance.now() };
       L.n -= amt; L.sup -= share;
       if (T.take && isCity(cell) && G.co[cell] !== L.owner) { capture(cell, L.owner); L.undo = null; }       // a split that took a city cannot be taken back
     }
-    L.acted = true; const sp = { k: 'split', id: L.id, p: L.owner, cell: L.cell, to: cell, amt: splitInfo.amt, tid: splitInfo.tid, merge: !!O };
+    L.acted = true; L.splitRound = G.round; const sp = { k: 'split', id: L.id, p: L.owner, cell: L.cell, to: cell, amt: splitInfo.amt, tid: splitInfo.tid, merge: !!O };
     const sm = logMsg(sp.merge ? 'evMerge' : 'evSplit', [L.owner, { lg: L.id }, splitInfo.amt, { lg: splitInfo.tid }], L.owner, true);
+    if (L.n === 0) { L.undo = null; kill(L); G.L = G.L.filter(x => !x.dead); }       // merged in whole: the legion is gone and the order cannot be taken back
     if (STEPS) rec(sp); else castEvent(logText(sm));          // the computer's steps are announced by their own caption
     touch(); return true;
   }
@@ -484,10 +474,10 @@
     const u = L && L.undo; if (!u || !L.acted || L.dead || L.owner !== G.cur) return false;
     if (u.split) {
       const N = G.L.find(x => x.id === u.split.tid); if (!N || N.dead) return false;
-      if (u.split.merge) { if (N.n < u.split.amt) return false; N.n -= u.split.amt; N.sup = Math.max(0, N.sup - u.split.share); N.recvN = Math.max(0, (N.recvN || 1) - 1); if (!N.recvN) { N.acted = false; N.why = null; } L.n += u.split.amt; L.sup += u.split.share; }
+      if (u.split.merge) { if (N.n < u.split.amt) return false; N.n -= u.split.amt; N.sup = Math.max(0, N.sup - u.split.share); N.recvN = Math.max(0, (N.recvN || 1) - 1); if (!N.recvN) { N.acted = false; N.why = null; N.splitRound = 0; } L.n += u.split.amt; L.sup += u.split.share; }
       else { if (N.cell == null) return false; L.n += N.n; L.sup += N.sup; kill(N); G.L = G.L.filter(x => !x.dead); }
     } else { L.st = u.st; L.tgt = u.tgt; L.route = u.route; L.bld = u.bld; L.atk = u.atk; L.atkCell = u.atkCell; L.atkV = u.atkV; L.ordRound = u.ord; }
-    L.acted = false; L.undo = null; touch(); return true;
+    L.acted = false; L.undo = null; L.splitRound = 0; touch(); return true;
   }
   function cancelBuild(p, o) {
     const P = G.players[p], i = P.pending.indexOf(o); if (i < 0 || o.at !== G.round || p !== G.cur) return false;
@@ -732,7 +722,7 @@
       evs.push({ s: L, t: T }); firing.add(L.id);
     }
     for (const L of G.L) {
-      if (L.dead || L.st !== 'alert' || firing.has(L.id) || L.firedRound === round) continue;
+      if (L.dead || L.st !== 'alert' || firing.has(L.id) || L.firedRound === round || L.splitRound === round) continue;
       const ts = targetsIn(L); if (!ts.length) continue;
       evs.push({ s: L, t: ts[0], auto: true });
     }
@@ -744,7 +734,13 @@
     if (!L || !T) return false;
     if (G.round === 1) { L.atk = 0; return false; }       // ceasefire
     if (L.dead || T.dead || L.st !== 'alert' || !inRange(L, T) || L.firedRound === G.round) return false;
-    L.atk = 0; L.firedRound = G.round; resolveFire([{ s: L, t: T }], G.round); return true;
+    L.atk = 0; L.firedRound = G.round; L.undo = null; resolveFire([{ s: L, t: T }], G.round); touch(); return true;
+  }
+  // a player's attack order: under the turn-by-turn rules it is fired at once, like the computer's (the clearing rules wait for the end of the round)
+  function attackNow(L, T, vc) {
+    if (!orderAttack(L, T, vc)) return false;
+    if (!G.clearing) fireNow(L, T);
+    return true;
   }
   // shots are fired and their damage applied: at the end of a round for everybody's alert fire, or at once for an order the computer carries out step by step
   // the dice are thrown for every shot at once; then the hits on each target are applied (all together, or one target after the other for the clearing rules' show)
@@ -861,7 +857,7 @@
       if (--s.t <= 0) { L.sup += s.amt; return false; }
       transit.set(L.id, (transit.get(L.id) || 0) + s.amt); return true;
     });
-    // legions ordered to repair add 1 point of defense per man, paid from their own supplies (5 each); a site becomes a big city from 100 points
+    // legions ordered to repair add 1 point of defense per man, paid from their own supplies (5 each); a site becomes a big city from CITY_MIN (200) points
     for (const L of G.L) {
       if (L.owner !== p || !L.bld) continue;
       const c = L.cell;
@@ -870,7 +866,8 @@
       if (pts <= 0) continue;
       const was = G.def[c] >= CITY_MIN;
       L.sup -= pts * BUILD_COST; G.def[c] += pts; G.co[c] = p; st(p)[6] += pts * BUILD_COST; st(p)[19] += pts;
-      if (!was && G.def[c] >= CITY_MIN) { logMsg('logBuilt', [p, { ct: c }], p); if (S.buildBonus > 0) { P.stock += S.buildBonus; st(p)[0] += S.buildBonus; logMsg('logBuildBonus', [p, { ct: c }, S.buildBonus], p); ecoEv(p, 'bld', S.buildBonus, c); } }
+      // the bonus is for a new city only: a city that dropped below the threshold and is repaired back gets nothing (the cell remembers it was a city until it falls)
+      if (!was && G.def[c] >= CITY_MIN && !G.wasCity[c]) { G.wasCity[c] = 1; logMsg('logBuilt', [p, { ct: c }], p); if (S.buildBonus > 0) { P.stock += S.buildBonus; st(p)[0] += S.buildBonus; logMsg('logBuildBonus', [p, { ct: c }, S.buildBonus], p); ecoEv(p, 'bld', S.buildBonus, c); } }
       if (G.def[c] >= CITY_MAX) { L.bld = false; ev('evMax', [p, { ct: c }, CITY_MAX], p); }
     }
     // send supplies: fighting legions first, then the ones closest to the enemy

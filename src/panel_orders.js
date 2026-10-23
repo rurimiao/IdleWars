@@ -31,7 +31,7 @@
   }
   // what a shipment to this legion loses on the road (5 % per extra 6 cells, plus enemy batteries covering the route) and how many turns it is under way
   const supDelay = L => { const d = reachOf(L.owner).dist[L.cell]; return d < 0 ? 0 : Math.max(0, Math.ceil(d / 6) - 1); };
-  const supLoss = L => Math.min(0.95, 0.01 * Math.max(0, reachOf(L.owner).dist[L.cell]) + artLoss(L.owner, L.cell) / 100);
+  const supLoss = L => Math.min(1, 0.01 * Math.max(0, reachOf(L.owner).dist[L.cell]) + artLoss(L.owner, L.cell) / 100);
   // your own money at a glance, above the orders
   function renderTodoEco() {
     const el = $('todoEco'); if (!el || !G) return;
@@ -44,7 +44,7 @@
     const body = $('todoList'); if (!body || !G) return;
     if (DIR.tab !== 'todo') return;
     renderTodoEco();
-    if (!humanTurn()) { body.innerHTML = `<div class="sub" style="padding:8px">${G.over ? tr('opsOver') : tr('opsWait', pname(G.cur))}</div>`; body.dataset.key = ''; return; }
+    if (!humanTurn()) { body.innerHTML = `<div class="sub" style="padding:8px">${G.over ? tr('opsOver') : tr('opsWaitList')}</div>`; body.dataset.key = ''; return; }
     const key = G.ver + ':' + G.round + ':' + G.cur + ':' + G.players[G.cur].stock + TD.a + TD.b; if (body.dataset.key === key) return; body.dataset.key = key;
     const t = todoData(), row = (go, text, color, cancel, sub) => `<div class="tdr" data-go="${go}"><i style="background:${color}"></i><span>${esc(text)}${sub ? `<small>${esc(sub.t)}${sub.t2 ? `<br><em${sub.lvl ? ` class="${sub.lvl}"` : ''}>${esc(sub.t2)}</em>` : ''}</small>` : ''}</span>${cancel ? `<button data-cancel="${cancel}" title="${tr('tdCancel')}">✕</button>` : ''}</div>`;
     const list = (rows, empty) => rows.length ? rows.join('') : `<div class="sub tde">${empty}</div>`;

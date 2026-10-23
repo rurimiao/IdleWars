@@ -178,7 +178,7 @@
   function whySplit(L, amt, i) {
     const a = whyAp(L); if (a) return a;
     const T = typ(L), O = i >= 0 ? G.lg[i] : null;
-    if (amt < 1 || amt >= L.n) return [tr('dnSplitAmt'), tr('dnSplitAmtB', L.n)];
+    if (amt < 1 || amt > L.n) return [tr('dnSplitAmt'), tr('dnSplitAmtB', L.n)];
     if (i < 0 || G.zone[i] < 0 || !linked(L.cell, i)) return [tr('dnSplitFar'), tr('dnSplitFarB')];
     if (isBlockedCell(i)) return [tr('dnBlocked'), tr('dnBlockedB')];
     if (O) {
@@ -186,6 +186,8 @@
       if (O.type !== L.type) return [tr('rOtherType'), tr('dnSplitTypeB')];
       if (O.acted && !O.recvN) return [tr('dnRecvActed'), tr('dnRecvActedB')];
       if (O.n >= T.cap) return [tr('rFull'), tr('dnFullB', T.cap)];
+      const left = L.n - Math.min(amt, T.cap - O.n);
+      if (left > 0 && left < T.min) return [tr('dnMinLeft'), tr('dnMergeLeftB', T.min)];
     }
     if (amt < T.min) return [tr('dnMinNew'), tr('dnMinNewB', T.min)];
     if (L.n - amt < T.min) return [tr('dnMinLeft'), tr('dnMinLeftB', T.min)];
@@ -223,7 +225,7 @@
     if (humanTurn() && L && G.mode === 'attack') {
       const T = lgAt(i);
       if (G.clearing) { if (orderStrike(L, i, L.type === 0 ? vertexCells(i, lastWorld[0], lastWorld[1]) : null)) { G.mode = null; flash(); snd.select(); } else deny(...whyAttack(L, i)); ui(true); requestDraw(); return; }
-      if (T && orderAttack(L, T, G.clearing && L.type === 0 ? vertexCells(i, lastWorld[0], lastWorld[1]) : null)) { G.mode = null; flash(); snd.select(); } else deny(...whyAttack(L, i));
+      if (T && attackNow(L, T, G.clearing && L.type === 0 ? vertexCells(i, lastWorld[0], lastWorld[1]) : null)) { G.mode = null; flash(); snd.select(); } else deny(...whyAttack(L, i));
       ui(true); requestDraw(); return;
     }
     if (humanTurn() && L && G.mode === 'split') {
@@ -333,28 +335,19 @@
   function zoneLines(zi) {
     const z = G.Z[zi], m = liveShares()[zi], fv = fogVis(), me = viewer(), out = [tr('zOutLine', z.out)];
     let tot = 0; if (m) for (const v of m.values()) tot += v;
-    // everyone taking part: shareholders first (biggest share first), then nations that only have a city or a legion here
+    // the output goes by big cities only: nations with cities here first (most cities first), then nations that only have legions here
     const order = m ? [...m].sort((a, b) => b[1] - a[1]).map(x => x[0]) : [];
     const cts = G.land.filter(c => G.zone[c] === zi && G.def[c] >= CITY_MIN && G.co[c] >= 0), lgs = G.L.filter(L => !L.dead && G.zone[L.cell] === zi);
-    for (const o of [...cts.map(c => G.co[c]), ...lgs.map(L => L.owner)]) if (!order.includes(o)) order.push(o);
+    for (const L of lgs) if (!order.includes(L.owner)) order.push(L.owner);
     for (const o of order) {
       if (fv && o !== me) continue;
-      out.push(m && m.has(o) ? tr('zShareLine', nameOf(o), m.get(o), Math.round(z.out * m.get(o) / tot)) : tr('zNoShareLine', nameOf(o)));
-      const mc = cts.filter(c => G.co[c] === o), ml = lgs.filter(L => L.owner === o), part = [];
-      const alertInf = ml.filter(L => L.type === 0 && L.st === 'alert');
-      if (alertInf.length) out.push('\u3000' + tr('zWhyYes', alertInf.map(L => `${lname(L)}${L.n}人`).join('、')));
-      else {
-        const why = ml.some(L => L.type === 0) ? tr('zWhyMarch') : ml.length ? tr('zWhyArt') : tr('zWhyCity');
-        out.push('\u3000' + tr('zWhyNo', why));
-      }
-      // what is here but earns no share: cities, infantry that is marching, all artillery
-      if (mc.length) part.push(tr('zCities', mc.map(c => `【${cityName(c)}】${tr("defShort")}${G.def[c]}`).join(' ')));
-      const sum = (a, k) => a.length ? tr('zLegions', tr(k), a.length, a.reduce((s, L) => s + L.n, 0)) : '';
-      const lg = [sum(ml.filter(L => L.type === 0 && L.st !== 'alert'), 'zMarchInf'), sum(ml.filter(L => L.type === 1), 'ty_art')].filter(Boolean).join('，'); if (lg) part.push(lg);
-      if (part.length) out.push('\u3000' + tr('zNoCount', part.join('；')));
+      const mc = cts.filter(c => G.co[c] === o);
+      if (mc.length) {
+        out.push(tr('zShareLine', nameOf(o), mc.length, Math.round(z.out * mc.length / tot)));
+        out.push('\u3000' + tr('zCities', mc.map(c => `【${cityName(c)}】${tr("defShort")}${G.def[c]}`).join(' ')));
+      } else out.push(tr('zNoShareLine', nameOf(o)));
     }
-    if (!m || !m.size) out.push(tr('zHolderLine', z.holder >= 0 ? nameOf(z.holder) : tr('nobody')), tr('zHolderWhy'));
-    else out.push(tr('zRule', tot));
+    out.push(m && m.size ? tr('zRule', tot) : tr('zNobodyWhy'));
     return out;
   }
 
@@ -366,7 +359,7 @@
   const stripOps = html => { const t = document.createElement('div'); t.innerHTML = html; t.querySelectorAll('.ops-part').forEach(n => n.remove()); return t.innerHTML; };
   function zoneInfoHTML(cell) {
     const z = G.zone[cell];
-    return `<div class="card"><div class="hd"><div><div class="t">${nameEdit('z', z, zoneName(z), true)}<span class="kw">（${tr('zoneWord')}）</span></div></div></div>${histHTML('z' + z)}<div class="sub">${zoneLines(z).join('<br>')}</div></div>`;
+    return `<div class="card"><div class="hd"><div><div class="t">${nameEdit('z', z, zoneName(z), true)}<span class="kw">（${tr('zoneWord')}）</span></div></div></div><div class="sub">${zoneLines(z).join('<br>')}</div></div>`;
   }
   function foeHTML(F) {
     const T = typ(F);
@@ -404,14 +397,8 @@
     }
     return o;
   }
-  // a name in the card heading: your own legions and cities, and any zone, can be renamed by clicking it (no action point)
-  // renaming is switched off: names are only shown
+  // names in the card heading are only shown (no renaming)
   function nameEdit(kind, id, text) { return esc(text); }
-  function histHTML(key) {
-    return '';       // no renaming, so no old names to show
-    const hh = G.nhist && G.nhist[key]; if (!hh || !hh.length) return '';
-    return `<details class="hist"><summary>${tr('oldNames')} (${hh.length})</summary>${[...hh].reverse().map(e => `<div>${tr('histLine', e.r, esc(pnameB(e.p)), key[0] === 'c' ? `<span class="cn">${esc(e.a)}</span>` : esc(key[0] === 'l' ? bk(e.a) : e.a), key[0] === 'c' ? `<span class="cn">${esc(e.b)}</span>` : esc(key[0] === 'l' ? bk(e.b) : e.b))}</div>`).join('')}</details>`;
-  }
   // ---------- command mode: what would happen under the pointer ----------
   function cmdCheck(L, h) {
     const key = [G.ver, G.mode, L.id, h, G.clearing && G.hoverW ? (G.hoverW[0] >> 3) + ',' + (G.hoverW[1] >> 3) : ''].join(':');
@@ -456,7 +443,7 @@
     const [lo, hi] = rangeOf(L);
     const hoardSel = `<select id="hoardS" data-act="hoard" title="${tr('hoard')}">${[0, 3, 5, 8, 10].map(v => `<option value="${v}" ${L.hoard === v ? 'selected' : ''}>${v === 0 ? tr('hoardOff') : String(v).padStart(2, '0')}</option>`).join('')}</select>`;
     const sup = L.starve > 0 ? `<span class="warn">${tr('starving', L.starve)}</span>` : `${tr('daysN', daysLeft(L))} <span class="sub">(${L.sup})</span>`;
-    let h = `<div class="hd"><img alt="" src="${avatarURL(L.owner)}"><div><div class="t">${nameEdit('l', L.id, lname(L), ctl)}</div><div class="s">${pname(L.owner)} · ${esc(zoneName(G.zone[L.cell]))}${isCity(L.cell) ? ' · 【' + esc(cityName(L.cell)) + '】' : ''}</div></div></div>` + histHTML('l' + L.id);
+    let h = `<div class="hd"><img alt="" src="${avatarURL(L.owner)}"><div><div class="t">${nameEdit('l', L.id, lname(L), ctl)}</div><div class="s">${pname(L.owner)} · ${esc(zoneName(G.zone[L.cell]))}${isCity(L.cell) ? ' · 【' + esc(cityName(L.cell)) + '】' : ''}</div></div></div>`;
     h += `<div class="kv"><span>${tr('men')}</span><b>${L.n}/${T.cap}人</b><span>${tr('state')}</span><b>${stateText(L)}</b>`
       + `<span>${tr('supply')}</span><b>${sup}</b>` + (ctl ? `<span>${tr('hoardS')}</span><b>${hoardSel}</b>` : '') + `<span>${tr('range')}</span><b>${lo}–${hi}</b>`;
     if (L.bld) h += `<span class="full">${tr('building', G.def[L.cell], CITY_MAX)}</span>`;
@@ -467,14 +454,14 @@
       o += `<div class="obtns" title="${tr('orders')} · ${L.acted ? tr('apUsed') : tr('apFree')}">`
         + `<button data-act="march" aria-pressed="${G.mode === 'march'}" title="${ok ? '' : tr('rNoAp')}" ${ok ? '' : 'disabled'}>${tr('cmdMarch')}</button>`
         + `<button data-act="attack" aria-pressed="${G.mode === 'attack'}" title="${!ok ? tr('rNoAp') : L.st !== 'alert' ? tr('rNotAlert') : !G.clearing && !targetsIn(L).some(t => lgAt(t.cell)) ? tr('rNoTarget') : ''}" ${ok && L.st === 'alert' && (G.clearing || targetsIn(L).some(t => lgAt(t.cell))) ? '' : 'disabled'}>${tr('cmdAttack')}</button>`
-        + `<button data-act="split" title="${L.n > 1 ? tr('minHint', T.min) : ''}" aria-pressed="${G.mode === 'split'}" ${ok && L.n > 1 ? '' : 'disabled'}>${tr('split')}</button><button data-act="repair" title="${G.def[L.cell] < CITY_MAX && !L.bld ? tr('repairHint', L.n, L.n * BUILD_COST, G.def[L.cell]).replace(/"/g, '') : ''}" ${canRepair(L) && humanTurn() ? '' : 'disabled'}>${tr('cmdRepair')}</button></div>`;
+        + `<button data-act="split" title="${tr('minHint', T.min)}" aria-pressed="${G.mode === 'split'}" ${ok ? '' : 'disabled'}>${tr('split')}</button><button data-act="repair" title="${G.def[L.cell] < CITY_MAX && !L.bld ? tr('repairHint', L.n, L.n * BUILD_COST, G.def[L.cell]).replace(/"/g, '') : ''}" ${canRepair(L) && humanTurn() ? '' : 'disabled'}>${tr('cmdRepair')}</button></div>`;
       if (!ok && humanTurn()) o += `<div class="sub">${(L.acted ? (orderText(L) ? tr('apNone', orderText(L)) : L.why ? tr(L.why[0], lname(L), lnameById(L.why[1])) : tr('apActed', lname(L))) : tr('dnNoCp'))}</div>`;
       const stop = k => `<div class="sub modehint"><span>${tr(k)}</span><button class="mhx" data-act="cancelMode" title="Esc">${tr('cancelMode')} ✕</button></div>`;
       if (G.mode === 'march') o += stop('pickTarget');
       if (G.mode === 'attack') o += stop('pickAttack');
-      if (L.n > 1 && G.mode === 'split') {
-        G.splitN = Math.max(1, Math.min(L.n - 1, G.splitN));
-        o += `<div class="stepper"><span class="olabel" style="margin:0">${tr('splitGo')}</span><input type="range" id="splitR" min="1" max="${L.n - 1}" value="${G.splitN}" aria-label="${tr('split')}"><output id="splitO">${G.splitN}</output></div>`
+      if (G.mode === 'split') {
+        G.splitN = Math.max(1, Math.min(L.n, G.splitN));
+        o += `<div class="stepper"><span class="olabel" style="margin:0">${tr('splitGo')}</span><input type="range" id="splitR" min="1" max="${L.n}" value="${G.splitN}" aria-label="${tr('split')}"><output id="splitO">${G.splitN}</output></div>`
           + stop('pickSplit');
       }
       h += `<div class="ops-part">${o}</div>`;
@@ -487,7 +474,7 @@
     const P = G.players[p], b = buyState(), T = TYPES[b.type], supplied = citySupplied(p, c);
     const room = cityRoom(c, p, b.type), maxN = Math.max(0, Math.min(room, Math.floor(P.stock / T.cost)));
     b.n = Math.max(T.min, Math.min(Math.max(T.min, maxN), b.n));
-    let h = `<div class="hd"><div><div class="t">${nameEdit('c', c, cityName(c), mine)}<span class="kw">（${tr('cityWord')}）</span></div><div class="s">${[tr('citySizeDef', G.def[c]), tr('cityOut', Math.floor(G.def[c] * S.tax / 100)), tr('cityKeep', cityUpkeep(G.def[c])), tr('citySup', citySupCap(G.def[c])), pname(p), esc(zoneName(G.zone[c]))].map((x, k, a) => `<span class="nw">${x}${k < a.length - 1 ? ' ·' : ''}</span>`).join(' ')}</div></div></div>` + histHTML('c' + c);
+    let h = `<div class="hd"><div><div class="t">${nameEdit('c', c, cityName(c), mine)}<span class="kw">（${tr('cityWord')}）</span></div><div class="s">${[tr('citySizeDef', G.def[c]), tr('cityOut', Math.floor(G.def[c] * S.tax / 100)), tr('cityKeep', cityUpkeep(G.def[c])), tr('citySup', citySupCap(G.def[c])), pname(p), esc(zoneName(G.zone[c]))].map((x, k, a) => `<span class="nw">${x}${k < a.length - 1 ? ' ·' : ''}</span>`).join(' ')}</div></div></div>`;
     if (mine) {
       let o = '';
       if (!supplied) o += `<div class="warn">${tr('cityCut')}</div>`;
@@ -813,20 +800,6 @@
       }
     }
     ctx.stroke();
-  }
-  // reach of every legion, as soft fills: enemy infantry red, enemy artillery orange, yours light blue
-  function rangeViz() {
-    const fv = fogVis(), key = G.ver + ':' + viewer() + ':' + (fv ? 1 : 0);
-    if (G._rvz && G._rvz.key === key) return G._rvz;
-    const out = { key, red: new Path2D(), orange: new Path2D(), blue: new Path2D() }, me = viewer();
-    for (const L of G.L) {
-      if (L.st === 'march') continue;
-      const mineL = L.owner === me;
-      if (!mineL && fv && !fv[L.cell]) continue;
-      const [lo, hi] = rangeOf(L), tgt = mineL ? out.blue : L.type === 0 ? out.red : out.orange;
-      for (const c of within(L.cell, hi)) if (G.zone[c] >= 0 && hexDist(L.cell, c) >= lo) tgt.addPath(cellPath(c));
-    }
-    G._rvz = out; return out;
   }
 
   // cells the selected legion can reach this turn: as many steps as it walks, not through enemies, and a hostile infantry's range ends the walk

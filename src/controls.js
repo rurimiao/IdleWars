@@ -532,7 +532,7 @@
     else if (act === 'attack' && L) { G.mode = G.mode === 'attack' ? null : 'attack'; flash(); afterOrder(); }
     else if (act === 'attackThis' && L) {
       const T = G.L.find(x => x.id === +b.dataset.v);
-      if (orderAttack(L, T)) { snd.select(); flash(); } else deny(tr('xBadAttack'), tr('dnAttackThis'));
+      if (attackNow(L, T)) { snd.select(); flash(); requestDraw(); } else deny(tr('xBadAttack'), tr('dnAttackThis'));
       afterOrder();
     }
     else if (act === 'repair' && L) { if (orderRepair(L)) snd.select(); else deny(...whyRepair(L)); afterOrder(); }
@@ -602,19 +602,7 @@
   $('muteBtn').addEventListener('click', () => { muted = !muted; try { localStorage.setItem('idlewars-mute', muted ? '1' : '0'); } catch (e) {} syncMute(); if (!muted) snd.select(); });
   $('sSupplyLine').addEventListener('change', () => { V.supply = $('sSupplyLine').checked; saveV(); syncView(); requestDraw(); });
 
-  // ---------- renaming (click a name in the card) ----------
-  sideEl.addEventListener('click', e => {
-    const b = e.target.closest('button[data-ren]'); if (!b) return;
-    const inp = document.createElement('input'); inp.className = 'ren'; inp.maxLength = NAME_MAX; inp.value = b.textContent; inp.dataset.ren = b.dataset.ren;
-    b.replaceWith(inp); inp.focus(); inp.select();
-  });
-  sideEl.addEventListener('keydown', e => { if (e.target.classList && e.target.classList.contains('ren')) { if (e.key === 'Enter') e.target.blur(); else if (e.key === 'Escape') { e.target.dataset.cancel = '1'; e.target.blur(); e.stopPropagation(); } } });
-  sideEl.addEventListener('focusout', e => {
-    const t = e.target; if (!t.classList || !t.classList.contains('ren')) return;
-    const [k, id] = t.dataset.ren.split(':'); const ok = !t.dataset.cancel && renameThing(k, +id, t.value);
-    if (ok) renderLog();
-    t.remove(); DIR.key = ''; ui(true); requestDraw();
-  });
+  $('sSpeed').addEventListener('change', () => { S.speed = $('sSpeed').value; });       // test hook only, the control is hidden
   // ---------- directory sidebar ----------
   // the dock on the right: panel / index / battle log, one of them is always showing
   const dockSync = () => {
@@ -645,7 +633,6 @@
   $('cpEnd').addEventListener('click', () => checkpointGo(true));
   $('newBtn').addEventListener('click', () => { closeNG(); closeModal(); newGame(); });
   $('overBtn').addEventListener('click', newGame);
-  $('sSpeed').addEventListener('change', () => { S.speed = $('sSpeed').value; });
   $('sTb').addEventListener('change', () => { S.tbs = Math.max(1, Math.min(9, Math.round(+$('sTb').value) || 1)); try { localStorage.setItem('idlewars-command-1', JSON.stringify(S)); } catch (e) {} });
   $('sStep').addEventListener('change', () => { S.step = +$('sStep').value || 1.5; try { localStorage.setItem('idlewars-command-1', JSON.stringify(S)); } catch (e) {} });
   $('sPlayers').addEventListener('input', () => { $('sPlayersOut').textContent = $('sPlayers').value; });
@@ -664,7 +651,7 @@
   new ResizeObserver(resize).observe($('boardWrap'));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => requestDraw());
   new MutationObserver(() => requestDraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.__game = { cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, rangeViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
+  window.__game = { attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
     setLang: l => { lang = l; applyLang(); }, setSpeed: v => { S.speed = String(v); }, screen: i => { const r = cvEl.getBoundingClientRect(); return [r.left + view.cw / 2 + (G.X[i] - view.cx) * view.s, r.top + view.ch / 2 + (G.Y[i] - view.cy) * view.s]; } };
 
   applyParams(); writeForm(); resize(); applyLang();

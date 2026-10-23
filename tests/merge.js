@@ -11,10 +11,12 @@ const r=await p.evaluate(()=>{const d=__game,G=d.G,me=G.cur,res={};
  G.lg[others[0].cell]=null;others[0].cell=nb[0];G.lg[nb[0]]=others[0];
  G.lg[others[1].cell]=null;others[1].cell=nb[1];G.lg[nb[1]]=others[1];
  B.n=5;others[0].n=8;others[1].n=8;
- res.m1=d.orderSplit(others[0],7,B.cell);res.acted=B.acted;res.recv=B.recvN;
- res.m2=d.orderSplit(others[1],7,B.cell);res.recv2=B.recvN;res.n=B.n;
+ res.m1=d.orderSplit(others[0],3,B.cell);res.acted=B.acted;res.recv=B.recvN;
+ res.m2=d.orderSplit(others[1],3,B.cell);res.leaveTooFew=d.orderSplit(others[1],1,B.cell);res.recv2=B.recvN;res.n=B.n;
  res.cancel=d.cancelOrder(others[0]);res.afterCancelActed=B.acted;res.recv3=B.recvN;
  res.cancel2=d.cancelOrder(others[1]);res.actedEnd=B.acted;
+ // merging a whole legion: it disappears and the men go over
+ const C2=others[0];const before=B.n;res.all=d.orderSplit(C2,C2.n,B.cell);res.allGone=C2.dead===true;res.allN=B.n-before;
  return res});
 console.log(JSON.stringify(r),er);
 // popup test
