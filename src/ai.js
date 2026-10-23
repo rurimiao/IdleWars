@@ -50,7 +50,7 @@
   const PRONG2 = 100;
   const strikeKeyOf = L => (G._strike && G._strike[L.owner + PRONG2] && G._strike[L.owner + PRONG2].has(L.id) ? L.owner + PRONG2 : L.owner);
   const allStrike = p => new Set([...((G._strike && G._strike[p]) || []), ...((G._strike && G._strike[p + PRONG2]) || [])]);
-  const STRIKE_MEN = 120, STRIKE_ARTS = 3, STRIKE_REACH = 16;       // a strike on a city: six full infantry legions and three batteries, gathered from within 16 cells of it (or 8 cells beyond our nearest city when that is farther)
+  const STRIKE_MEN = 160, STRIKE_ARTS = 3, STRIKE_REACH = 16;       // a strike on a city: a big wave of eight full infantry legions and three batteries, gathered from within 16 cells of it (or 8 cells beyond our nearest city when that is farther)
   const wreckOrCity = c => G.def[c] >= CITY_MIN || (G.wasCity[c] && G.def[c] > 0);       // a city knocked below the threshold is still worth taking (or getting back)
   const cityPrize = c => 600 + ((G.Z[G.zone[c]] && G.Z[G.zone[c]].out) || 0) * 1.5 + G.def[c] * 0.5;       // zones belong to whoever holds the cities in them: a captured city takes its share of the zone along
   // how much of a choke point a cell is: few open neighbours (1 to 6 pass cells around it)
@@ -98,7 +98,8 @@
     const front = c => { let d = 99; for (const F of foes) { const e = hexDist(c, F.cell); if (e < d) d = e; } return d; };
     const fd = new Map(cts.map(c => [c, front(c)]));
     cts.sort((a, b) => fd.get(a) - fd.get(b));
-    const reserve = upk * 1.2 + 100, limit = Math.max(260, (P.income || 400) * k.grow);
+    const Rg = G._rally && G._rally[p], gathering = Rg && G.aiGo && G.aiGo[p] && Rg.id === G.aiGo[p].id && !Rg.go;       // gathering a wave for a strike: keep less money back, more men
+    const reserve = upk * (gathering ? 0.5 : 1.2) + 100, limit = Math.max(260, (P.income || 400) * k.grow);
     for (const c of cts) {
       if (P.stock < reserve + 60 || upk >= limit) break;
       const sty = aiStyleOf(p), type = art < inf * sty.art && P.stock > reserve + 200 ? 1 : 0, T = TYPES[type];
@@ -254,6 +255,17 @@
     if (R.go && R.siege == null) R.siege = G.round;
     G.aiGo[key].assault = peaceful || !gar || gar.n <= TYPES[gar.type].min * 2 || !guns.length || (R.siege != null && G.round - R.siege > 12);
     act.storm = G.aiGo[key].assault;
+    // cutting off help (打援): once the strike is under way, up to two infantry legions of a big enough force stand on the road from the enemy's nearest other city,
+    // about 5 cells out from the target, and shoot whatever comes along it
+    if (!G._block) G._block = {}; G._block[key] = new Map();
+    const sInf = G.L.filter(x => G._strike[key].has(x.id) && x.type === 0);
+    if (R.go && !peaceful && act.k === 'city' && sInf.length >= 4 && G.co[cell] >= 0) {
+      let E = -1, ed = 1e9; for (const c of cities(G.co[cell])) { const d = hexDist(c, cell); if (c !== cell && d < ed) { ed = d; E = c; } }
+      if (E >= 0 && ed > 6) {
+        let bc = -1, bsc = 1e9; for (const c of within(cell, 6)) { const d = hexDist(c, cell); if (d < 4 || isBlockedCell(c)) continue; const sc = hexDist(c, E) + Math.abs(d - 5) * 2; if (sc < bsc) { bsc = sc; bc = c; } }
+        if (bc >= 0) for (const x of sInf.sort((a, b) => hexDist(a.cell, bc) - hexDist(b.cell, bc)).slice(0, 2)) G._block[key].set(x.id, bc);
+      }
+    }
   }
   function aiRoutes(p, seen) {
     const w = new Map(), who = new Map();
@@ -391,6 +403,8 @@
       const dObj = hexDist(L.cell, go.obj), gar = ts.find(t => t.cell === go.obj);
       if (gar && splashScore(L, gar) > -20) { orderAttack(L, gar); return; }       // a battery holds its fire on the garrison when our own storming men stand round it
       if (ts.length && !(L.type === 1 && R && R.go && dObj > T.rmax && !foes.some(F => F.type === 0 && hexDist(L.cell, F.cell) <= 2))) { const t = aiPickTarget(L, ts); if (t) { orderAttack(L, t); return; } }
+      const bk = G._block && G._block[key] && G._block[key].get(L.id);
+      if (bk != null) { if (hexDist(L.cell, bk) > 1) aiStandOff(L, bk, 0, 1); return; }       // cutting off help: on the road, alert (it fires at whatever comes in reach)
       if (R && !R.go && R.cell >= 0) {       // still gathering: walk to the rally point and wait there
         if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 3).filter(c => !G.lg[c] && !isBlockedCell(c) && hexDist(c, go.obj) >= 4).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 8)) if (aiMarch(L, c)) return; }       // a big force needs room: anywhere within 3 of the rally point, out of the city's reach
         return;

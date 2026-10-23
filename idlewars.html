@@ -701,7 +701,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 <div class="wrap">
   <header>
     <div class="hl">
-      <h1><span data-i="title"></span> <small class="ver">v409</small></h1>
+      <h1><span data-i="title"></span> <small class="ver">v410</small></h1>
       <div class="hint" id="hint"><img id="hintImg" alt="" hidden><span id="hintText"></span><span class="widewarn" data-i="wideWarn"></span></div>
     </div>
     <div class="hbtns"><div class="hgrp"><button class="hb hb-cam" id="camBtn"><i></i><span></span></button><span class="hround"><span data-i="turn"></span> <b id="roundNo">1</b></span><button class="hb hb-ff" id="ffBtn" data-i="ffBtn"></button><button class="hb hb-pause" id="pauseBtn"></button></div><div class="hgrp seg"><button class="hb hb-take" id="ctlBtn" data-i="takeOver"></button><button class="hb hb-auto" id="autoBtn" data-i="autoPlay"></button></div><button class="btn alt sm ib" id="bStats" data-it="statsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button><button class="btn alt sm ib" id="bSet" data-it="menuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button class="btn alt sm ib" id="bHelp" data-it="helpTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8"/><path d="M12 17.2h.01"/></svg></button></div>
@@ -1027,8 +1027,10 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
         '>四种风格是同一套规则配不同的数值：炮兵比例、多早出兵、敢不敢先动手、是否只守家。',
         '>两个多变开关会让它中途换风格（见“电脑风格”页）。',
         '<b>怎么攻城</b>：',
-        '>挑离自己近、守得弱的城；从目标 16 格内凑突击队：至少约 6 个满编步兵团（120 人），并且是目标周围敌军的两倍，再配至少 3 个炮兵团。',
+        '>挑离自己近、守得弱的城；从目标 16 格内凑突击队：至少约 8 个满编步兵团（160 人），并且是目标周围敌军的两倍，再配至少 3 个炮兵团。',
         '>步兵到齐七成、炮兵到齐才出发；等了 16 回合还凑不齐也出发。',
+        '>凑兵期间少留存款、多造兵，攒够一大波再去。',
+        '>围城时分出 2 个步兵团，守在目标和敌方最近的城之间的路上，专打来增援的兵团。',
         '>先在城外集结，炮兵在射程边上打守军，步兵在外面等；守军打残了、没炮了或拖太久，步兵就冲。',
         '>城墙被打到 200 以下就是工地，突击队走进去修它，修第一点起就归自己。',
         '>久攻不下（敌军远多于自己，或 8 回合没进展）就放弃，换一座。',
@@ -1435,7 +1437,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
         '>主力先在有补给的地方集结，到齐六成再一起压上去（备粮调到 10 回合）。',
         '<b>建新城</b>：电脑会自己选址，最多同时 3 个工地（守家风格 2 个）。',
      '<b>远征</b>：要打的城离自家最近的城超过 10 格时，电脑会在半路修一座前进城（可多 1 个工地），缩短补给线。',
-     '<b>兵分两路</b>：主力凑够以后，还剩至少 120 人的步兵时，第二个想法另组一支部队同时进行。',
+     '<b>兵分两路</b>：主力凑够以后，还剩至少 160 人的步兵时，第二个想法另组一支部队同时进行。',
         '<b>小股兵团</b>：电脑对它也会犹豫。',
         '>电脑不会主动拆兵团。',
         '>靠近敌人时，每个小团不能太小。',
@@ -3105,7 +3107,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   const PRONG2 = 100;
   const strikeKeyOf = L => (G._strike && G._strike[L.owner + PRONG2] && G._strike[L.owner + PRONG2].has(L.id) ? L.owner + PRONG2 : L.owner);
   const allStrike = p => new Set([...((G._strike && G._strike[p]) || []), ...((G._strike && G._strike[p + PRONG2]) || [])]);
-  const STRIKE_MEN = 120, STRIKE_ARTS = 3, STRIKE_REACH = 16;       // a strike on a city: six full infantry legions and three batteries, gathered from within 16 cells of it (or 8 cells beyond our nearest city when that is farther)
+  const STRIKE_MEN = 160, STRIKE_ARTS = 3, STRIKE_REACH = 16;       // a strike on a city: a big wave of eight full infantry legions and three batteries, gathered from within 16 cells of it (or 8 cells beyond our nearest city when that is farther)
   const wreckOrCity = c => G.def[c] >= CITY_MIN || (G.wasCity[c] && G.def[c] > 0);       // a city knocked below the threshold is still worth taking (or getting back)
   const cityPrize = c => 600 + ((G.Z[G.zone[c]] && G.Z[G.zone[c]].out) || 0) * 1.5 + G.def[c] * 0.5;       // zones belong to whoever holds the cities in them: a captured city takes its share of the zone along
   // how much of a choke point a cell is: few open neighbours (1 to 6 pass cells around it)
@@ -3153,7 +3155,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const front = c => { let d = 99; for (const F of foes) { const e = hexDist(c, F.cell); if (e < d) d = e; } return d; };
     const fd = new Map(cts.map(c => [c, front(c)]));
     cts.sort((a, b) => fd.get(a) - fd.get(b));
-    const reserve = upk * 1.2 + 100, limit = Math.max(260, (P.income || 400) * k.grow);
+    const Rg = G._rally && G._rally[p], gathering = Rg && G.aiGo && G.aiGo[p] && Rg.id === G.aiGo[p].id && !Rg.go;       // gathering a wave for a strike: keep less money back, more men
+    const reserve = upk * (gathering ? 0.5 : 1.2) + 100, limit = Math.max(260, (P.income || 400) * k.grow);
     for (const c of cts) {
       if (P.stock < reserve + 60 || upk >= limit) break;
       const sty = aiStyleOf(p), type = art < inf * sty.art && P.stock > reserve + 200 ? 1 : 0, T = TYPES[type];
@@ -3309,6 +3312,17 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (R.go && R.siege == null) R.siege = G.round;
     G.aiGo[key].assault = peaceful || !gar || gar.n <= TYPES[gar.type].min * 2 || !guns.length || (R.siege != null && G.round - R.siege > 12);
     act.storm = G.aiGo[key].assault;
+    // cutting off help (打援): once the strike is under way, up to two infantry legions of a big enough force stand on the road from the enemy's nearest other city,
+    // about 5 cells out from the target, and shoot whatever comes along it
+    if (!G._block) G._block = {}; G._block[key] = new Map();
+    const sInf = G.L.filter(x => G._strike[key].has(x.id) && x.type === 0);
+    if (R.go && !peaceful && act.k === 'city' && sInf.length >= 4 && G.co[cell] >= 0) {
+      let E = -1, ed = 1e9; for (const c of cities(G.co[cell])) { const d = hexDist(c, cell); if (c !== cell && d < ed) { ed = d; E = c; } }
+      if (E >= 0 && ed > 6) {
+        let bc = -1, bsc = 1e9; for (const c of within(cell, 6)) { const d = hexDist(c, cell); if (d < 4 || isBlockedCell(c)) continue; const sc = hexDist(c, E) + Math.abs(d - 5) * 2; if (sc < bsc) { bsc = sc; bc = c; } }
+        if (bc >= 0) for (const x of sInf.sort((a, b) => hexDist(a.cell, bc) - hexDist(b.cell, bc)).slice(0, 2)) G._block[key].set(x.id, bc);
+      }
+    }
   }
   function aiRoutes(p, seen) {
     const w = new Map(), who = new Map();
@@ -3446,6 +3460,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       const dObj = hexDist(L.cell, go.obj), gar = ts.find(t => t.cell === go.obj);
       if (gar && splashScore(L, gar) > -20) { orderAttack(L, gar); return; }       // a battery holds its fire on the garrison when our own storming men stand round it
       if (ts.length && !(L.type === 1 && R && R.go && dObj > T.rmax && !foes.some(F => F.type === 0 && hexDist(L.cell, F.cell) <= 2))) { const t = aiPickTarget(L, ts); if (t) { orderAttack(L, t); return; } }
+      const bk = G._block && G._block[key] && G._block[key].get(L.id);
+      if (bk != null) { if (hexDist(L.cell, bk) > 1) aiStandOff(L, bk, 0, 1); return; }       // cutting off help: on the road, alert (it fires at whatever comes in reach)
       if (R && !R.go && R.cell >= 0) {       // still gathering: walk to the rally point and wait there
         if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 3).filter(c => !G.lg[c] && !isBlockedCell(c) && hexDist(c, go.obj) >= 4).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 8)) if (aiMarch(L, c)) return; }       // a big force needs room: anywhere within 3 of the rally point, out of the city's reach
         return;
