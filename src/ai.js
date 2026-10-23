@@ -46,6 +46,10 @@
     if (attach && STEPS && STEPS.length) STEPS[STEPS.length - 1].note = n; else pushNote(n);
   }
   // what a big city is worth to the computer: a high base, plus the zone's output it sits in and its defense
+  // two strikes at once (兵分两路): the main one is kept under the nation's number p, the second under p + PRONG2 (in G.aiGo, G._strike and G._rally)
+  const PRONG2 = 100;
+  const strikeKeyOf = L => (G._strike && G._strike[L.owner + PRONG2] && G._strike[L.owner + PRONG2].has(L.id) ? L.owner + PRONG2 : L.owner);
+  const allStrike = p => new Set([...((G._strike && G._strike[p]) || []), ...((G._strike && G._strike[p + PRONG2]) || [])]);
   const STRIKE_MEN = 120, STRIKE_ARTS = 3, STRIKE_REACH = 16;       // a strike on a city: six full infantry legions and three batteries, gathered from within 16 cells of it (or 8 cells beyond our nearest city when that is farther)
   const wreckOrCity = c => G.def[c] >= CITY_MIN || (G.wasCity[c] && G.def[c] > 0);       // a city knocked below the threshold is still worth taking (or getting back)
   const cityPrize = c => 600 + ((G.Z[G.zone[c]] && G.Z[G.zone[c]].out) || 0) * 1.5 + G.def[c] * 0.5;       // zones belong to whoever holds the cities in them: a captured city takes its share of the zone along
@@ -60,9 +64,11 @@
     let sites = 0; for (const c of G.land) if (G.co[c] === p && G.def[c] > 0 && G.def[c] < CITY_MIN) sites++;
     const plans = (bs[p] || (bs[p] = [])).filter(x => { const L = G.L.find(l => l.id === x.lid && !l.dead); return L && (L.st === 'march' || (L.cell === x.cell && G.def[x.cell] === 0)); });
     bs[p] = plans;
-    if (sites + plans.length >= (sty.hold ? 2 : 3)) return;
+    // an expedition: the main strike goes for a city far from our land (more than 10 cells from our nearest city); a city on the way, 6 cells or more short of it, shortens the supply road
+    const go = G.aiGo && G.aiGo[p], T = go && go.k === 'city' ? go.obj : -1, dT = T >= 0 ? Math.min(...cts.map(q => hexDist(q, T))) : 0, far = !sty.hold && dT > 10;
+    if (sites + plans.length >= (sty.hold ? 2 : 3) + (far ? 1 : 0)) return;
     const sh = zoneShares(), cv = cover(), own = 1 << p;
-    let best = -1, bsc = -1e9;
+    let best = -1, bsc = -1e9, fwd = false;
     for (const c of G.land) {
       if (G.lg[c] || G.def[c] > 0 || isBlockedCell(c) || G.zone[c] < 0 || (cv.inf[c] & ~own)) continue;
       let dOwn = 99; for (const q of cts) dOwn = Math.min(dOwn, hexDist(c, q));
@@ -70,16 +76,16 @@
       let dFoe = 99; for (const F of foes) dFoe = Math.min(dFoe, hexDist(c, F.cell));
       if (dFoe < 4) continue;
       let dCity = 99; for (const q of G.land) if (G.def[q] >= CITY_MIN && G.co[q] !== p) dCity = Math.min(dCity, hexDist(c, q));
-      const z = G.Z[G.zone[c]], m = sh[G.zone[c]], tot = m ? [...m.values()].reduce((a, b) => a + b, 0) : 0, mine = m ? (m.get(p) || 0) : 0, gain = z.out * ((mine + 1) / (tot + 1) - (tot ? mine / tot : 0)), sc = gain * 0.7 + chokeAt(c) * 40 - dOwn * 8 - Math.min(dCity, 12) * 3 + (dFoe < 8 ? 15 : 0);
-      if (sc > bsc) { bsc = sc; best = c; }
+      const z = G.Z[G.zone[c]], m = sh[G.zone[c]], tot = m ? [...m.values()].reduce((a, b) => a + b, 0) : 0, mine = m ? (m.get(p) || 0) : 0, gain = z.out * ((mine + 1) / (tot + 1) - (tot ? mine / tot : 0)), sc = gain * 0.7 + chokeAt(c) * 40 - dOwn * 8 - Math.min(dCity, 12) * 3 + (dFoe < 8 ? 15 : 0) + (far && hexDist(c, T) >= 6 && hexDist(c, T) < dT ? (dT - hexDist(c, T)) * 60 + dOwn * 8 : 0);
+      if (sc > bsc) { bsc = sc; best = c; fwd = far && hexDist(c, T) >= 6 && hexDist(c, T) < dT - 2; }
     }
     if (best < 0) return;
     let pick = null, pd = 1e9;
-    const sk = (G._strike && G._strike[p]) || new Set();       // the strike force is not sent off to build
+    const sk = allStrike(p);       // the strike force is not sent off to build
     for (const L of G.L) { if (L.owner !== p || L.type !== 0 || L.st !== 'alert' || L.acted || L.bld || isCity(L.cell) || L.n < 8 || sk.has(L.id)) continue; const d = hexDist(L.cell, best); if (d < pd && d <= 14) { pd = d; pick = L; } }
     if (!pick || !orderMarch(pick, best)) return;
     bs[p].push({ lid: pick.id, cell: best });
-    aiNote(p, tr('aiSite', lname(pick), zoneName(G.zone[best])), 'z:' + G.zone[best], true);
+    aiNote(p, fwd ? tr('aiForward', lname(pick), zoneName(G.zone[best]), cityName(T)) : tr('aiSite', lname(pick), zoneName(G.zone[best])), 'z:' + G.zone[best], true);
   }
   const enemyInfNear = (p, c, r) => { let s = 0; for (const q of within(c, r)) { const F = G.lg[q]; if (F && F.owner !== p && F.type === 0) s += F.n; } return s; };
   function aiProduce(p, k, foes) {
@@ -103,7 +109,7 @@
   }
   function aiPickTarget(L, ts) {       // the garrison of the city under attack first, then batteries, then the biggest legion
     let best = null, bs = -1;
-    const go = G.aiGo && G.aiGo[L.owner];
+    const go = G.aiGo && G.aiGo[strikeKeyOf(L)];
     for (const t of ts) { const s = (go && go.obj === t.cell ? 200 : 0) + (t.type === 1 ? 100 : 0) + t.n - hexDist(L.cell, t.cell) * 0.5; if (s > bs) { bs = s; best = t; } }
     return best;
   }
@@ -166,8 +172,9 @@
   function aiThink(p, k, sty, foes) {
     if (!Array.isArray(G.intent[p])) G.intent[p] = G.intent[p] ? [G.intent[p]] : [];
     const I = G.intent[p];
-    if (!G._strike) G._strike = {}; const prevStrike = G._strike[p] || new Set(), prevFor = G.aiGo && G.aiGo[p] ? G.aiGo[p].id : null; G._strike[p] = new Set();
-    if (!G.aiGo) G.aiGo = {};
+    if (!G._strike) G._strike = {}; if (!G.aiGo) G.aiGo = {};
+    const prev = [p, p + PRONG2].map(key => ({ set: G._strike[key] || new Set(), id: G.aiGo[key] ? G.aiGo[key].id : null }));
+    G._strike[p] = new Set(); G._strike[p + PRONG2] = new Set();
     for (const it of [...I]) { const why = intentOver(p, it); if (why) { aiNote(p, tr(why, intentText(it))); endIntent(p, it, why); } }
     const field = G.L.filter(x => x.owner === p && x.type === 0 && x.n >= 6 && !x.dead && !isCity(x.cell) && !x.bld);
     let force = 0; for (const x of field) force += x.n;
@@ -180,8 +187,8 @@
         if (ex) { ex.str = intentStr(p, ex); if (h >= ex.last + 60) { ex.last = h; ex.until = Math.min(G.round + INTENT_LIFE, ex.until + 10); intentNote(ex, tr('itHistHate', Math.round(h))); } }
         else if (h >= HATE_MIN && I.filter(x => x.by === 'ai').length < MAX_AI_INTENTS) { addIntent(p, 'nation', q, 'ai', tr('itHistFormHate', Math.round(h))); aiNote(p, tr('aiRevenge', pname(q), Math.round(h))); }
       }
-      if (!sty.hold && !I.some(x => x.k === 'city') && force >= need && I.filter(x => x.by === 'ai').length < MAX_AI_INTENTS) {
-        const cs = G.land.filter(i => wreckOrCity(i) && G.co[i] !== p && G.co[i] >= 0);
+      if (!sty.hold && I.filter(x => x.k === 'city').length < (force >= STRIKE_MEN * 2 ? 2 : 1) && force >= need && I.filter(x => x.by === 'ai').length < MAX_AI_INTENTS) {       // a second city when the army can carry two strikes
+        const cs = G.land.filter(i => wreckOrCity(i) && G.co[i] !== p && G.co[i] >= 0 && !I.some(x => x.k === 'city' && x.t === i));
         // a city close to our own land, weakly held: the distance counts a lot and the defenders around it (not only the garrison) are weighed in
         const mine = cities(p), local = i => { let n = 0; for (const F of foes) if (hexDist(F.cell, i) <= 4) n += F.type === 0 ? F.n : F.n * 1.5; return n; };
         let best = -1, bd = -1e18; for (const i of cs) { const dOwn = mine.length ? Math.min(...mine.map(q => hexDist(q, i))) : 99; const sc = cityPrize(i) - dOwn * 40 - local(i) * 6 - G.def[i] * 0.4; if (sc > bd) { bd = sc; best = i; } }
@@ -190,49 +197,61 @@
     }
     for (const it of I) it.str = intentStr(p, it);
     // the strongest idea that still has a target is the one carried out now; the others wait
-    let act = null, cell = -1; for (const it of [...I].sort((a, b) => b.str - a.str)) { const c = intentCell(p, it); if (c >= 0) { act = it; cell = c; break; } }
-    if (!act) { G.aiGo[p] = null; return; }
-    G.aiGo[p] = { obj: cell, k: act.k, id: act.id };
+    // with men enough to spare after the main strike (and not the stay-home style), the next idea with another target gets a strike of its own
+    const ideas = []; for (const it of [...I].sort((a, b) => b.str - a.str)) { const c = intentCell(p, it); if (c >= 0 && !ideas.some(x => x.cell === c)) ideas.push({ act: it, cell: c }); }
+    G.aiGo[p + PRONG2] = null;
+    if (!ideas.length) { G.aiGo[p] = null; return; }
+    aiProng(p, p, ideas[0].act, ideas[0].cell, field, need, foes, prev[0]);
+    const spare = field.filter(x => !G._strike[p].has(x.id)), spareMen = spare.reduce((a, x) => a + x.n, 0);
+    if (ideas.length > 1 && !sty.hold && spareMen >= STRIKE_MEN) {
+      const two = ideas.find(x => x.act.id === prev[1].id) || ideas[1];       // the second strike keeps its idea while it can
+      if (two.act !== ideas[0].act) { if (prev[1].id !== two.act.id) aiNote(p, tr('aiSplit', intentText(two.act))); aiProng(p, p + PRONG2, two.act, two.cell, spare, need, foes, prev[1]); }
+    }
+  }
+  // one strike force (key: p for the main one, p + PRONG2 for the second): pick its men and batteries, gather them, then go in
+  function aiProng(p, key, act, cell, field, need, foes, prev) {
+    const prevStrike = prev.set, prevFor = prev.id;
+    G.aiGo[key] = { obj: cell, k: act.k, id: act.id };
     const peaceful = act.k === 'zone' && !(G.lg[cell] && G.lg[cell].owner !== p) && !(G.def[cell] >= CITY_MIN && G.co[cell] >= 0 && G.co[cell] !== p);       // nobody to fight in the zone: a few legions are enough
     let near = 0; for (const F of foes) if (F.owner !== p && hexDist(F.cell, cell) <= 4) near += F.type === 0 ? F.n : F.n * 1.5;
     const want = peaceful ? 30 : act.by === 'you' ? 1e9 : Math.max(need, (near + 20) * 1.8, act.k === 'city' ? STRIKE_MEN : 0);       // about twice what holds the ground round the target, and for a city at least six full legions (what took a starting city in tests/siege_bench.js)
     // the strike force keeps its members from one turn to the next (so legions do not keep joining and leaving); the nearest field infantry fills it up to what is wanted
     const keep = act.id === prevFor ? field.filter(x => prevStrike.has(x.id)) : [];
     const mineC = cities(p), reach = Math.max(STRIKE_REACH, (mineC.length ? Math.min(...mineC.map(q => hexDist(q, cell))) : 0) + 8);       // far from our land (big maps, few nations) the force comes from round our nearest city
-    let sum = 0, nInf = 0; for (const x of [...keep, ...field.filter(x => !keep.includes(x) && hexDist(x.cell, cell) <= reach).sort((a, b) => hexDist(a.cell, cell) - hexDist(b.cell, cell))]) { if (sum >= want && (act.by !== 'you' || peaceful)) break; G._strike[p].add(x.id); sum += x.n; nInf++; x.hoard = 10; }       // carry a full load of food: the march is long
+    let sum = 0, nInf = 0; for (const x of [...keep, ...field.filter(x => !keep.includes(x) && hexDist(x.cell, cell) <= reach).sort((a, b) => hexDist(a.cell, cell) - hexDist(b.cell, cell))]) { if (sum >= want && (act.by !== 'you' || peaceful)) break; G._strike[key].add(x.id); sum += x.n; nInf++; x.hoard = 10; }       // carry a full load of food: the march is long
     // a city held far too strongly for what we can bring is given up after a while, so the force can go for a softer one
     if (!peaceful && act.by === 'ai') {
       act.hard = near > sum * 1.2 ? (act.hard || 0) + 1 : 0;
       // a strike that gets no closer for 8 turns once it is storming (enemy legions on the way stop every march) is given up the same way
-      const inf = G.L.filter(x => G._strike[p].has(x.id) && x.type === 0), dAvg = inf.length ? inf.reduce((a, x) => a + hexDist(x.cell, cell), 0) / inf.length : 99;
+      const inf = G.L.filter(x => G._strike[key].has(x.id) && x.type === 0), dAvg = inf.length ? inf.reduce((a, x) => a + hexDist(x.cell, cell), 0) / inf.length : 99;
       if (act.dBest == null || dAvg < act.dBest - 1 || G.lg[cell] && G.lg[cell].owner !== p && G.lg[cell].n < (act.garLow ?? 1e9)) { act.dBest = Math.min(act.dBest ?? 99, dAvg); act.garLow = G.lg[cell] ? G.lg[cell].n : 0; act.stuckFrom = G.round; }
       if (!act.storm) act.stuckFrom = G.round; else if (G.round - act.stuckFrom >= 8) act.hard = 6;
-      if (act.hard >= 6) { aiNote(p, tr('aiIntentHard', intentText(act))); endIntent(p, act, 'aiIntentHard'); G.aiGo[p] = null; G._strike[p] = new Set(); return; }
+      if (act.hard >= 6) { aiNote(p, tr('aiIntentHard', intentText(act))); endIntent(p, act, 'aiIntentHard'); G.aiGo[key] = null; G._strike[key] = new Set(); return; }
     }
     // batteries go along to break the walls: about one for every two infantry legions, the nearest ones
     if (!peaceful) {
       const arts = G.L.filter(x => x.owner === p && x.type === 1 && !x.dead && !isCity(x.cell) && x.n >= TYPES[1].min && hexDist(x.cell, cell) <= reach).sort((a, b) => (prevStrike.has(b.id) && act.id === prevFor) - (prevStrike.has(a.id) && act.id === prevFor) || hexDist(a.cell, cell) - hexDist(b.cell, cell));
-      for (const x of arts.slice(0, Math.max(STRIKE_ARTS, Math.ceil(nInf / 2)))) { G._strike[p].add(x.id); x.hoard = 10; }
+      for (const x of arts.slice(0, Math.max(STRIKE_ARTS, Math.ceil(nInf / 2)))) { G._strike[key].add(x.id); x.hoard = 10; }
     }
     // gather first, strike together: a rally point on supplied, uncovered ground not too far from the target; the assault starts when most of the force is there
     if (!G._rally) G._rally = {};
-    let R = G._rally[p]; if (!R || R.id !== act.id) R = G._rally[p] = { id: act.id, since: G.round, cell: -1, go: false };
+    let R = G._rally[key]; if (!R || R.id !== act.id) R = G._rally[key] = { id: act.id, since: G.round, cell: -1, go: false };
     const rr = reachOf(p), cv = cover(), own = 1 << p;
     if (peaceful) R.go = true;
     if (!R.go) {
       let rc = -1, rb = 1e9; for (const c of within(cell, 10)) { if (isBlockedCell(c) || G.lg[c] || rr.dist[c] < 0 || (cv.inf[c] & ~own) || hexDist(c, cell) < 4) continue; const d = hexDist(c, cell); if (d < rb) { rb = d; rc = c; } }
       R.cell = rc;
       // it goes when the infantry at the rally point comes to most of what is wanted and the batteries are there too (as many as there are, up to three)
-      const strikers = G.L.filter(x => G._strike[p].has(x.id)); let there = 0, all = 0, gunsAll = 0, gunsThere = 0;
+      const strikers = G.L.filter(x => G._strike[key].has(x.id)); let there = 0, all = 0, gunsAll = 0, gunsThere = 0;
       for (const x of strikers) { const at = rc < 0 || hexDist(x.cell, rc) <= 5; if (x.type === 1) { gunsAll++; if (at) gunsThere++; continue; } all += x.n; if (at) there += x.n; }
       if (rc < 0 || all === 0 || (there >= Math.min(all, want) * 0.7 && all >= Math.min(want, STRIKE_MEN) * 0.6 && gunsThere >= Math.min(gunsAll, STRIKE_ARTS)) ||
           G.round - R.since > (act.by === 'you' ? 8 : 16)) R.go = true;
     }
     // the siege: while our batteries can work on the garrison, the infantry waits out of the city's reach; it goes in once the garrison is weak, the guns are gone or the siege drags on
-    const gar = G.lg[cell] && G.lg[cell].owner !== p ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[p].has(x.id) && x.type === 1);
+    const gar = G.lg[cell] && G.lg[cell].owner !== p ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[key].has(x.id) && x.type === 1);
     if (R.go && R.siege == null) R.siege = G.round;
-    G.aiGo[p].assault = peaceful || !gar || gar.n <= TYPES[gar.type].min * 2 || !guns.length || (R.siege != null && G.round - R.siege > 12);
-    act.storm = G.aiGo[p].assault;
+    G.aiGo[key].assault = peaceful || !gar || gar.n <= TYPES[gar.type].min * 2 || !guns.length || (R.siege != null && G.round - R.siege > 12);
+    act.storm = G.aiGo[key].assault;
   }
   function aiRoutes(p, seen) {
     const w = new Map(), who = new Map();
@@ -265,7 +284,7 @@
   }
   // cities in danger: enemy men within 5 cells outweigh our men within 2; the nearest idle legions (not the strike force) are sent there, the emptiest city first
   function aiDefend(p, foes) {
-    const out = new Map(), used = new Set(), strike = (G._strike && G._strike[p]) || new Set(), w = L => (L.type === 0 ? L.n : L.n * 1.5), danger = [];
+    const out = new Map(), used = new Set(), strike = allStrike(p), w = L => (L.type === 0 ? L.n : L.n * 1.5), danger = [];
     for (const c of cities(p)) {
       let threat = 0; for (const F of foes) if (hexDist(F.cell, c) <= 5) threat += w(F);
       if (!threat) continue;
@@ -333,12 +352,12 @@
   function aiLegion(L, k, foes, seen, routes) {
     const p = L.owner, T = typ(L), sty = aiStyleOf(p);
     if (L.acted || Math.random() < k.skip) return;
-    const go = G.aiGo && G.aiGo[p], inStrike = go && go.obj >= 0 && G._strike && G._strike[p] && G._strike[p].has(L.id);
+    const key = strikeKeyOf(L), go = G.aiGo && G.aiGo[key], inStrike = go && go.obj >= 0 && G._strike && G._strike[key] && G._strike[key].has(L.id);
     // a march goes on by itself, unless it is a strike legion still heading for an old rally point or an old target: it is turned round
     if (L.st === 'march' && L.tgt != null && !(inStrike && hexDist(L.tgt, go.obj) > (L.type === 0 ? (go.assault ? 1 : 5) : T.rmax + 1))) return;
     const onCity = isCity(L.cell);
     const ts = targetsIn(L).filter(t => seen(t.cell));
-    const R = G._rally && G._rally[p], cv = cover(), own = 1 << p;
+    const R = G._rally && G._rally[key], cv = cover(), own = 1 << p;
     const inFoeReach = q => !!(cv.inf[q] & ~own);
     // standing on a city knocked below the threshold (an enemy's, or one of our own): whoever repairs a site owns it, so rebuild it into our own city
     if (!onCity && G.def[L.cell] > 0) {
@@ -365,7 +384,7 @@
       return;
     }
     // part of the strike force
-    if (!onCity && go && G._strike && G._strike[p] && G._strike[p].has(L.id)) {
+    if (!onCity && inStrike) {
       // shoot when the city's garrison is in reach, or when the strike is gathering or storming; a battery still on its way keeps walking (standing still it would only fire at whatever screens the city)
       const dObj = hexDist(L.cell, go.obj), gar = ts.find(t => t.cell === go.obj);
       if (gar) { orderAttack(L, gar); return; }
@@ -379,7 +398,7 @@
       if (!go.assault) { aiStandOff(L, go.obj, 4, 4); return; }
       // the storm is on: latecomers from far away do not walk in one by one; they meet at the rally point and go in as the next wave
       if (R && R.cell >= 0 && dObj > 6) {
-        const wave = G.L.filter(x => G._strike[p].has(x.id) && x.type === 0 && hexDist(x.cell, R.cell) <= 3).reduce((a, x) => a + x.n, 0);
+        const wave = G.L.filter(x => G._strike[key].has(x.id) && x.type === 0 && hexDist(x.cell, R.cell) <= 3).reduce((a, x) => a + x.n, 0);
         if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 2).filter(c => !G.lg[c] && !isBlockedCell(c)).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 5)) if (aiMarch(L, c)) return; return; }
         if (wave < 40) return;
       }       // infantry waits just out of the city's reach while the guns work
@@ -436,7 +455,7 @@
   }
   // who gets the command points first: the defence of a city in danger, the strike force, legions with a target in reach, builders, then the rest
   function aiOrderOf(p, seen) {
-    const df = (G._defend && G._defend[p]) || new Map(), sk = (G._strike && G._strike[p]) || new Set(), bs = (G._bs && G._bs[p]) || [];
+    const df = (G._defend && G._defend[p]) || new Map(), sk = allStrike(p), bs = (G._bs && G._bs[p]) || [];
     const so = (G._sortie && G._sortie[p]) || new Map();
     const pri = L => df.has(L.id) || so.has(L.id) ? 0 : sk.has(L.id) ? 1 : targetsIn(L).some(t => seen(t.cell)) ? 2 : (L.bld || bs.some(x => x.lid === L.id)) ? 3 : 4;
     return shuffle(G.L.filter(x => x.owner === p)).map(L => [pri(L), L]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
