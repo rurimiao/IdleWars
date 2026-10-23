@@ -88,12 +88,12 @@
     for (const l of cc.list) if (l !== big) for (const i of l) isLand[i] = 0;
   }
   // P nations, cpp playable cells per nation, vf share of the board that is hole
-  function genWorld(P, cpp, vf, K) {
+  function genWorld(P, cpp, vf, K, minR = 24, minC = 34, sepMax = 3) {       // minR/minC: the smallest board, sepMax: the most zones kept between two nations (the map maker uses less of both to keep nations close together)
     const want = P * cpp;
     let area = want / (1 - vf) * 1.06;
     for (let attempt = 0; attempt < 60; attempt++) {
       const rect = area / 0.72;
-      const rows = Math.max(24, Math.min(150, Math.round(Math.sqrt(rect / 1.45)))), cols = Math.max(34, Math.min(210, Math.round(rows * 1.45)));
+      const rows = Math.max(minR, Math.min(150, Math.round(Math.sqrt(rect / 1.45)))), cols = Math.max(minC, Math.min(210, Math.round(rows * 1.45)));
       setGrid(cols, rows); buildCoords();
       const total = COLS * ROWS;
       // island outline
@@ -212,7 +212,7 @@
       // nations are kept apart by one or two empty zones (never touching): every pair is at least 2 zone-steps apart and every nation has a neighbour at 2 or 3
       const nearest = nz => nz.map((zs, p) => { let m = 99; for (const z of zs) for (let q = 0; q < P; q++) if (q !== p) for (const y of nz[q]) m = Math.min(m, zd[z][y]); return m; });
       let dealt = null, gapZ = 0;
-      for (const sep of attempt >= 40 ? [3, 2, 1] : [3, 2]) for (let t = 0; t < (sep === 3 ? 25 : 60) && !dealt; t++) {
+      for (const sep of (attempt >= 40 ? [3, 2, 1] : [3, 2]).filter(x => x <= sepMax)) for (let t = 0; t < (sep === sepMax ? 25 : 60) && !dealt; t++) {
         const r = deal(sep); if (!r) continue;
         const ne = nearest(r.nz.map(a => a.slice(0, K)));
         if (sep === 1 || ne.every(m => m <= 3)) { dealt = r; gapZ = sep - 1; }
@@ -233,4 +233,24 @@
       return { Z, zone, phys, link: Int32Array.from(phys), X, Y, land, owner, gap, K: kz, gapZ };
     }
     throw new Error('map generation failed');
+  }
+  // ---------- the fixed maps (src/maps.js): a world packed into a few strings, and back ----------
+  // zones: the zone of every cell, row by row, as runs ("zone+1 in base 36" "." "run length in base 36", comma separated; 0 is a hole);
+  // home: the nation each zone belongs to at the start (-1 neutral); gap: the cells of the narrow gaps
+  function packMap(g) {
+    const total = COLS * ROWS, runs = [];
+    for (let i = 0; i < total;) { const z = g.zone[i] < 0 || !g.land.includes(i) ? -1 : g.zone[i]; let n = 1; while (i + n < total && (g.zone[i + n] < 0 || !g.land.includes(i + n) ? -1 : g.zone[i + n]) === z) n++; runs.push((z + 1).toString(36) + '.' + n.toString(36)); i += n; }
+    const gap = []; for (let i = 0; i < total; i++) if (g.gap[i]) gap.push(i);
+    return { cols: COLS, rows: ROWS, zones: runs.join(','), home: g.Z.map(z => z.home ?? -1), gap };
+  }
+  function loadMap(m) {
+    setGrid(m.cols, m.rows); buildCoords();
+    const total = COLS * ROWS, zone = new Int16Array(total).fill(-1), isLand = new Uint8Array(total), land = [];
+    let i = 0; for (const r of m.zones.split(',')) { const [a, b] = r.split('.'), z = parseInt(a, 36) - 1, n = parseInt(b, 36); for (let k = 0; k < n; k++, i++) if (z >= 0) { zone[i] = z; isLand[i] = 1; land.push(i); } }
+    const X = new Float32Array(total), Y = new Float32Array(total);
+    for (let c = 0; c < total; c++) { const [x, y] = cellXY(c % COLS, (c / COLS) | 0); X[c] = x; Y[c] = y; }
+    const { Z, phys } = makeZones(m.home.length, zone, isLand, X, Y, land), owner = new Int16Array(total).fill(-1);
+    Z.forEach((z, k) => { const h = m.home[k]; if (h >= 0) { z.holder = h; z.home = h; for (const c of z.cells) owner[c] = h; } z.out = ZONE_OUT; });
+    const gap = new Uint8Array(total); for (const c of m.gap) gap[c] = 1;
+    return { Z, zone, phys, link: Int32Array.from(phys), X, Y, land, owner, gap, K: 6, gapZ: 0 };
   }

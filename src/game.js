@@ -257,8 +257,8 @@
   }
   function newGame() {
     readForm();
-    const P = S.players, cpp = 300;
-    const g = genWorld(P, cpp, VOID_SHARE[S.obs] || 0.3, 6);
+    const P = S.players, cpp = 300, fixed = NGmap >= 0 && MAPS[P] ? MAPS[P][NGmap] : null;       // a fixed map picked in the new-game panel, or a new random one
+    const g = fixed ? loadMap(fixed) : genWorld(P, cpp, VOID_SHARE[S.obs] || 0.3, 6);
     const total = COLS * ROWS;
     G = { Z: g.Z, zone: g.zone, phys: g.phys, link: g.link, X: g.X, Y: g.Y, land: g.land, owner: g.owner, gap: g.gap,
       lg: new Array(total).fill(null), def: new Uint16Array(total), wasCity: new Uint8Array(total), co: new Int16Array(total).fill(-1), cpEvery: S.chk || 50, cpCount: 0, promptedAt: 0, zname: [], zpre: [], cname: {}, lgInfo: {}, nhist: {},
