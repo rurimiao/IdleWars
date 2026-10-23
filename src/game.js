@@ -711,6 +711,12 @@
     return rep;
   }
 
+  // a shot at a legion (turn-by-turn rules): a battery also hits the ring of six round its target, at half damage, friends included (as under the clearing rules)
+  function shotsAt(L, T, extra) {
+    const out = [{ s: L, t: T, ...extra }];
+    if (L.type === 1) for (const c of nbrs(T.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && !U.dead && U !== L) out.push({ s: L, t: U, ...extra, half: true, fr: U.owner === L.owner }); }
+    return out;
+  }
   // 2. at the end of the round every legion that can fire does so at once. A legion with an attack command shoots only its named target;
   // every other alert legion shoots the nearest enemy in range (the bigger one if tied). All casualties are settled together.
   function fireRound() {
@@ -723,12 +729,12 @@
       const T = byId.get(L.atk); L.atk = 0;
       if (L.firedRound === round) continue;
       if (!T || T.dead || L.st !== 'alert' || !inRange(L, T)) { ev('evCancelAtk', [L.owner, { lg: L.id }, !T || T.dead ? tr('evGone') : L.st !== 'alert' ? tr('evNotAlert') : tr('evOutRange')], L.owner); continue; }
-      evs.push({ s: L, t: T }); firing.add(L.id);
+      evs.push(...shotsAt(L, T)); firing.add(L.id);
     }
     for (const L of G.L) {
       if (L.dead || L.st !== 'alert' || firing.has(L.id) || L.firedRound === round || L.splitRound === round) continue;
       const ts = targetsIn(L); if (!ts.length) continue;
-      evs.push({ s: L, t: ts[0], auto: true });
+      evs.push(...shotsAt(L, ts[0], { auto: true }));
     }
     if (!evs.length) return false;
     resolveFire(evs, round); return true;
@@ -738,7 +744,7 @@
     if (!L || !T) return false;
     if (G.round === 1) { L.atk = 0; return false; }       // ceasefire
     if (L.dead || T.dead || L.st !== 'alert' || !inRange(L, T) || L.firedRound === G.round) return false;
-    L.atk = 0; L.firedRound = G.round; L.undo = null; resolveFire([{ s: L, t: T }], G.round); touch(); return true;
+    L.atk = 0; L.firedRound = G.round; L.undo = null; resolveFire(shotsAt(L, T), G.round); touch(); return true;
   }
   // a player's attack order: under the turn-by-turn rules it is fired at once, like the computer's (the clearing rules wait for the end of the round)
   function attackNow(L, T, vc) {
@@ -793,7 +799,7 @@
     const dmg = rollShots(evs, round);
     for (const [T, d] of dmg) applyShots(T, d);
     G.L = G.L.filter(x => !x.dead);
-    evs.slice(0, 6).forEach((e, i) => (e.s.type === 1 ? snd.cannon(i * 0.25) : snd.gun(i * 0.25, e.men)));       // guns and cannon, one after another
+    evs.filter(e => !e.half).slice(0, 6).forEach((e, i) => (e.s.type === 1 ? snd.cannon(i * 0.25) : snd.gun(i * 0.25, e.men)));       // guns and cannon, one after another
     touch();
   }
   // the clearing rules: the same result, shown one target after the other

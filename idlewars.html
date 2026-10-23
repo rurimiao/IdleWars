@@ -701,7 +701,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 <div class="wrap">
   <header>
     <div class="hl">
-      <h1><span data-i="title"></span> <small class="ver">v408</small></h1>
+      <h1><span data-i="title"></span> <small class="ver">v409</small></h1>
       <div class="hint" id="hint"><img id="hintImg" alt="" hidden><span id="hintText"></span><span class="widewarn" data-i="wideWarn"></span></div>
     </div>
     <div class="hbtns"><div class="hgrp"><button class="hb hb-cam" id="camBtn"><i></i><span></span></button><span class="hround"><span data-i="turn"></span> <b id="roundNo">1</b></span><button class="hb hb-ff" id="ffBtn" data-i="ffBtn"></button><button class="hb hb-pause" id="pauseBtn"></button></div><div class="hgrp seg"><button class="hb hb-take" id="ctlBtn" data-i="takeOver"></button><button class="hb hb-auto" id="autoBtn" data-i="autoPlay"></button></div><button class="btn alt sm ib" id="bStats" data-it="statsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button><button class="btn alt sm ib" id="bSet" data-it="menuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button class="btn alt sm ib" id="bHelp" data-it="helpTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8"/><path d="M12 17.2h.01"/></svg></button></div>
@@ -1157,6 +1157,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
         '<b>两种兵团</b>：',
         '>步兵团：占城、拦截行军、修城快。',
         '>炮兵团：射程远，拆城墙快，能压制敌方补给线，也能占城。',
+        '>炮兵开火有溅射（轮流制和清算制都有）：目标周围一圈的兵团也挨打，伤害减半，自己人也会被误伤。所以城里刚造出来、挤在城边的新兵，也会被炮火波及。',
         '<b>库存</b>：每个国家一个全国库存，造兵、补给、维护城市都花它。',
         '<b>胜负</b>：',
         '>只剩一个国家就赢。',
@@ -2695,6 +2696,12 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     return rep;
   }
 
+  // a shot at a legion (turn-by-turn rules): a battery also hits the ring of six round its target, at half damage, friends included (as under the clearing rules)
+  function shotsAt(L, T, extra) {
+    const out = [{ s: L, t: T, ...extra }];
+    if (L.type === 1) for (const c of nbrs(T.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && !U.dead && U !== L) out.push({ s: L, t: U, ...extra, half: true, fr: U.owner === L.owner }); }
+    return out;
+  }
   // 2. at the end of the round every legion that can fire does so at once. A legion with an attack command shoots only its named target;
   // every other alert legion shoots the nearest enemy in range (the bigger one if tied). All casualties are settled together.
   function fireRound() {
@@ -2707,12 +2714,12 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       const T = byId.get(L.atk); L.atk = 0;
       if (L.firedRound === round) continue;
       if (!T || T.dead || L.st !== 'alert' || !inRange(L, T)) { ev('evCancelAtk', [L.owner, { lg: L.id }, !T || T.dead ? tr('evGone') : L.st !== 'alert' ? tr('evNotAlert') : tr('evOutRange')], L.owner); continue; }
-      evs.push({ s: L, t: T }); firing.add(L.id);
+      evs.push(...shotsAt(L, T)); firing.add(L.id);
     }
     for (const L of G.L) {
       if (L.dead || L.st !== 'alert' || firing.has(L.id) || L.firedRound === round || L.splitRound === round) continue;
       const ts = targetsIn(L); if (!ts.length) continue;
-      evs.push({ s: L, t: ts[0], auto: true });
+      evs.push(...shotsAt(L, ts[0], { auto: true }));
     }
     if (!evs.length) return false;
     resolveFire(evs, round); return true;
@@ -2722,7 +2729,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (!L || !T) return false;
     if (G.round === 1) { L.atk = 0; return false; }       // ceasefire
     if (L.dead || T.dead || L.st !== 'alert' || !inRange(L, T) || L.firedRound === G.round) return false;
-    L.atk = 0; L.firedRound = G.round; L.undo = null; resolveFire([{ s: L, t: T }], G.round); touch(); return true;
+    L.atk = 0; L.firedRound = G.round; L.undo = null; resolveFire(shotsAt(L, T), G.round); touch(); return true;
   }
   // a player's attack order: under the turn-by-turn rules it is fired at once, like the computer's (the clearing rules wait for the end of the round)
   function attackNow(L, T, vc) {
@@ -2777,7 +2784,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const dmg = rollShots(evs, round);
     for (const [T, d] of dmg) applyShots(T, d);
     G.L = G.L.filter(x => !x.dead);
-    evs.slice(0, 6).forEach((e, i) => (e.s.type === 1 ? snd.cannon(i * 0.25) : snd.gun(i * 0.25, e.men)));       // guns and cannon, one after another
+    evs.filter(e => !e.half).slice(0, 6).forEach((e, i) => (e.s.type === 1 ? snd.cannon(i * 0.25) : snd.gun(i * 0.25, e.men)));       // guns and cannon, one after another
     touch();
   }
   // the clearing rules: the same result, shown one target after the other
@@ -3155,10 +3162,12 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       if (n >= T.min && orderBuildUnits(p, c, type, n)) { aiNote(p, tr('aiBuild', cityName(c), n, tr('ty_' + T.k)), 'c:' + c, true); upk += n * T.eat; if (type === 0) inf += n; else art += n; }
     }
   }
+  // a battery's splash hits the ring round its target: enemies there count for the shot, our own men against it (0 for infantry)
+  const splashScore = (L, t) => { let f = 0, e = 0; if (L.type === 1) for (const c of nbrs(t.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && U !== L) { if (U.owner === L.owner) f += U.n; else e += U.n; } } return e * 0.5 - f * 1.5; };
   function aiPickTarget(L, ts) {       // the garrison of the city under attack first, then batteries, then the biggest legion
     let best = null, bs = -1;
     const go = G.aiGo && G.aiGo[strikeKeyOf(L)];
-    for (const t of ts) { const s = (go && go.obj === t.cell ? 200 : 0) + (t.type === 1 ? 100 : 0) + t.n - hexDist(L.cell, t.cell) * 0.5; if (s > bs) { bs = s; best = t; } }
+    for (const t of ts) { const s = (go && go.obj === t.cell ? 200 : 0) + (t.type === 1 ? 100 : 0) + t.n - hexDist(L.cell, t.cell) * 0.5 + splashScore(L, t); if (s > bs) { bs = s; best = t; } }
     return best;
   }
   const passN = c => { let n = 0; for (let e = 0; e < 6; e++) { const v = G.link[c * 6 + e]; if (v >= 0 && !isBlockedCell(v)) n++; } return n; };
@@ -3435,7 +3444,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (!onCity && inStrike) {
       // shoot when the city's garrison is in reach, or when the strike is gathering or storming; a battery still on its way keeps walking (standing still it would only fire at whatever screens the city)
       const dObj = hexDist(L.cell, go.obj), gar = ts.find(t => t.cell === go.obj);
-      if (gar) { orderAttack(L, gar); return; }
+      if (gar && splashScore(L, gar) > -20) { orderAttack(L, gar); return; }       // a battery holds its fire on the garrison when our own storming men stand round it
       if (ts.length && !(L.type === 1 && R && R.go && dObj > T.rmax && !foes.some(F => F.type === 0 && hexDist(L.cell, F.cell) <= 2))) { const t = aiPickTarget(L, ts); if (t) { orderAttack(L, t); return; } }
       if (R && !R.go && R.cell >= 0) {       // still gathering: walk to the rally point and wait there
         if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 3).filter(c => !G.lg[c] && !isBlockedCell(c) && hexDist(c, go.obj) >= 4).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 8)) if (aiMarch(L, c)) return; }       // a big force needs room: anywhere within 3 of the rally point, out of the city's reach

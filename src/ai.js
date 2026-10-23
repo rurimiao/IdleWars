@@ -107,10 +107,12 @@
       if (n >= T.min && orderBuildUnits(p, c, type, n)) { aiNote(p, tr('aiBuild', cityName(c), n, tr('ty_' + T.k)), 'c:' + c, true); upk += n * T.eat; if (type === 0) inf += n; else art += n; }
     }
   }
+  // a battery's splash hits the ring round its target: enemies there count for the shot, our own men against it (0 for infantry)
+  const splashScore = (L, t) => { let f = 0, e = 0; if (L.type === 1) for (const c of nbrs(t.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && U !== L) { if (U.owner === L.owner) f += U.n; else e += U.n; } } return e * 0.5 - f * 1.5; };
   function aiPickTarget(L, ts) {       // the garrison of the city under attack first, then batteries, then the biggest legion
     let best = null, bs = -1;
     const go = G.aiGo && G.aiGo[strikeKeyOf(L)];
-    for (const t of ts) { const s = (go && go.obj === t.cell ? 200 : 0) + (t.type === 1 ? 100 : 0) + t.n - hexDist(L.cell, t.cell) * 0.5; if (s > bs) { bs = s; best = t; } }
+    for (const t of ts) { const s = (go && go.obj === t.cell ? 200 : 0) + (t.type === 1 ? 100 : 0) + t.n - hexDist(L.cell, t.cell) * 0.5 + splashScore(L, t); if (s > bs) { bs = s; best = t; } }
     return best;
   }
   const passN = c => { let n = 0; for (let e = 0; e < 6; e++) { const v = G.link[c * 6 + e]; if (v >= 0 && !isBlockedCell(v)) n++; } return n; };
@@ -387,7 +389,7 @@
     if (!onCity && inStrike) {
       // shoot when the city's garrison is in reach, or when the strike is gathering or storming; a battery still on its way keeps walking (standing still it would only fire at whatever screens the city)
       const dObj = hexDist(L.cell, go.obj), gar = ts.find(t => t.cell === go.obj);
-      if (gar) { orderAttack(L, gar); return; }
+      if (gar && splashScore(L, gar) > -20) { orderAttack(L, gar); return; }       // a battery holds its fire on the garrison when our own storming men stand round it
       if (ts.length && !(L.type === 1 && R && R.go && dObj > T.rmax && !foes.some(F => F.type === 0 && hexDist(L.cell, F.cell) <= 2))) { const t = aiPickTarget(L, ts); if (t) { orderAttack(L, t); return; } }
       if (R && !R.go && R.cell >= 0) {       // still gathering: walk to the rally point and wait there
         if (hexDist(L.cell, R.cell) > 3) { for (const c of within(R.cell, 3).filter(c => !G.lg[c] && !isBlockedCell(c) && hexDist(c, go.obj) >= 4).sort((a, b) => hexDist(L.cell, a) - hexDist(L.cell, b)).slice(0, 8)) if (aiMarch(L, c)) return; }       // a big force needs room: anywhere within 3 of the rally point, out of the city's reach
