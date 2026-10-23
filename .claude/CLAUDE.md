@@ -25,7 +25,7 @@
 
 1. 改 `src/` 里的文件（一次改一小块，别用批量替换；替换前确认锚点只出现一次）。
 2. `./build.sh`：拼成 `idlewars.html` 并做语法检查，要看到 `SYNTAX_OK`。
-3. 跑回归：第一次先 `npm install`（只装 playwright 模块），然后 `npm test`，会先拼装，再依次跑 `all_panels`、`save_load`、`clearing_sim` 三个，要全部写“通过”。再按改动单独跑专项，一次只跑一个，用 `timeout` 包住：`node tests/xxx.js $PWD/idlewars.html`。
+3. 跑回归：第一次先 `npm install`（只装 playwright 模块），然后 `npm test`，会先拼装，再依次跑 `all_panels`、`save_load`、`clearing_sim`、`sym_maps` 四个，要全部写“通过”。再按改动单独跑专项，一次只跑一个，用 `timeout` 包住：`node tests/xxx.js $PWD/idlewars.html`。
 4. 改了用户可见的东西，`src/page.html` 里的版本号 `<small class="ver">vNNN</small>` 加 1。
 5. 用户说“更新一波文档”时，更新 `.claude/docs/design.md`（改动时间线、规则、已知问题）；规则有变就同步改 `.claude/docs/rules.md`（规则书），以代码为准。
 

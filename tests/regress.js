@@ -1,4 +1,4 @@
-// 依次跑三个回归测试（一次只跑一个），按各自的“通过”输出判断，有一个不通过就以非 0 退出
+// 依次跑四个回归测试（一次只跑一个），按各自的“通过”输出判断，有一个不通过就以非 0 退出
 const { spawnSync } = require('child_process');
 const path = require('path');
 const page = path.resolve(__dirname, '..', 'idlewars.html');
@@ -6,6 +6,7 @@ const runs = [
   ['all_panels.js', /errors \[\]/],
   ['save_load.js', /no errors/],
   ['clearing_sim.js', /bad \[\] errors \[\]/],
+  ['sym_maps.js', /bad \[\] errors \[\]/],
 ];
 let failed = 0;
 for (const [file, ok] of runs) {
