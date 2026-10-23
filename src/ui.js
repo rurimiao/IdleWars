@@ -554,7 +554,7 @@
     if (G.avImg) for (const u of G.avImg) if (u) uploadFace(u);       // decode uploaded faces early
     $('roundNo').textContent = G.round;
     { mineId(); $('zMine').textContent = G.lastHuman != null ? tr('mineOf', nameOf(G.lastHuman)) : tr('mine'); }       // the button says who "me" is right now
-    { const tn = $('turnName'); tn.firstElementChild.src = avatarURL(G.cur); tn.firstElementChild.dataset.avp = tn.children[1].dataset.avp = G.cur; tn.firstElementChild.title = tn.children[1].title = tr('avTip'); tn.children[1].textContent = pname(G.cur); const ss = $('styleSel'); ss.value = (G.aiStyle && G.aiStyle[G.cur]) || 'balanced'; ss.title = tr('aiStyleL'); const ls = $('levelSel'); ls.value = (G.aiLevel && G.aiLevel[G.cur]) || 'normal'; ls.title = tr('aiLevelL'); }
+    { const tn = $('turnName'); tn.firstElementChild.src = avatarURL(G.cur); tn.firstElementChild.dataset.avp = tn.children[1].dataset.avp = G.cur; tn.firstElementChild.title = tn.children[1].title = tr('avTip'); tn.children[1].textContent = pname(G.cur); const ss = $('styleSel'); ss.value = (G.aiStyle && G.aiStyle[G.cur]) || 'steady'; ss.title = tr('aiStyleL'); const ls = $('levelSel'); ls.value = (G.aiLevel && G.aiLevel[G.cur]) || 'normal'; ls.title = tr('aiLevelL'); }
     camUI(); const pb = $('pauseBtn'); pb.textContent = G.paused ? tr('resumeBtn') : tr('pauseBtn'); pb.classList.toggle('on', !!G.paused); pb.disabled = G.over;
     { const h = G.players[G.cur].human; const tk = $('ctlBtn'), au = $('autoBtn'); tk.disabled = G.over || h; au.disabled = G.over || !h; tk.title = tr('takeTip'); au.title = tr('autoTip'); }       // play this nation / hand it over: only the one that makes sense is clickable, pause or not
     $('endBtn').disabled = !humanTurn();

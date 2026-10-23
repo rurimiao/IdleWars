@@ -70,7 +70,11 @@
 
 ### 电脑怎么决策（`ai.js`）
 
-- `aiTurn(p, play)`：`aiProduce`（造兵）→ `aiThink`（更新“想法”：进攻某城、占领某大区、报复某国，带强度和剩余回合）→ `aiBuildCity` ×2 → 对每个兵团用 `aiLegion` 下令（随机顺序，每个步骤记进 `STEPS`）。`aiExpand` 现在是空函数。
+- `aiTurn(p, play)`：`aiShift`（两个多变开关换风格）→ `aiProduce`（造兵）→ `aiThink`（更新“想法”：进攻某城、占领某大区、报复某国；定突击队 `G._strike[p]`、集结点 `G._rally[p]`、是否冲锋 `G.aiGo[p].assault`）→ `aiBuildCity` ×2 → `aiDefend`（哪些兵团回救哪座城，`G._defend[p]`）→ 按 `aiOrderOf` 的轻重顺序对每个兵团用 `aiLegion` 下令（守城 > 突击队 > 射程内有敌 > 修城 > 其他，指挥点先给前面的）。
+- 风格只有四种（`AI_STYLES`：steady 稳健、wave 人海、heavy 重炮、hold 固守），旧存档的七种用 `OLD_STYLE` 映射过来（`pickStyle`）。两个多变开关在 `G.aiDyn[p] = {a, b, next}`，显示用 `styleText(p)`。
+- 新游戏面板的每家一行在 `controls.js` 的 `NGR`（`rosterSync` 跟玩家数和隐藏的 `#sHumans` 对齐，测试仍可只改 `sHumans`）；`newGame` 从 `NGR` 读真人、库存、风格、难度、开关、头像和名字。
+- 打残的城：规则本来就是“谁修工地就归谁”。电脑站上敌方工地就修（`aiLegion` 开头），自己被打残的城由 `aiDefend` 派人回去修；`wreckOrCity` 让工地化的旧城也能当攻城目标。
+- `aiLegion` 里的小工具：`aiStandOff`（走到离某格 lo–hi 的空格）、`aiMerge` / `smallLegion`（小兵团并进同兵种）、`aiMakeRoom`（城边闲兵往外让）。
 - 分数都是手写的规则打分，不是搜索或学习；风格（`aiStyle`）和难度（`AIK`）只是调权重。原理在帮助“电脑 > 电脑决策原理”。
 - 电脑是一批批下令、一批批演示（`flush`）：`playLive`（`ui.js`）把 `STEPS` 里的步骤重新“演给你看”，字幕、镜头、声音，每步等“电脑每步停留”；你中途拖动地图就暂停跟随。
 
@@ -154,6 +158,7 @@ const bad = await p.evaluate(() => {
 | `save_load.js` | 开局、走几回合、存档、读档，比对回合数、兵团数、总人数、库存、城防总和 | `no errors` |
 | `clearing_sim.js` | 6 个电脑国、清算制跑约 80 秒，每 2 秒查一次不变量，还打印几条清算战报样例 | `bad [] errors []` |
 | `ai_sim.js` | 纯电脑模拟：`node tests/ai_sim.js <html> <玩家数> <最大回合> <难度> <大小> <秒>`，环境变量 `FOG=1` 开迷雾；打印回合、城池数、库存、兵团和人数，用来对比改动前后电脑的表现（先对基线再对新版，样本很小只能看大趋势） | 无 `bad` |
+| `ai_capture.js` | 纯电脑攻城验收：`node tests/ai_capture.js <html> [局数] [回合]`，6 家电脑；打印每局开局城易手数（`turned`）、正在被修的（`taking`）、原主的工地数、小兵团数、库存和风格 | 最后一行是每局易手数和平均 |
 | `orders_tab.js` | 操作页“没有行动点”“城市已下单”这类原因文字 | 打印出正确的句子 |
 | `clearing_anim.js` / `clearing_status_bar.js` / `clearing_supply_lines.js` | 清算演示：截图、状态栏阶段文字轮询、补给线随每一步的变化和格子表一致性 | 轮询序列里的值按预期变化 |
 | `command_points_params.js` / `command_points_help.js` / `command_points_tab.js` / `command_points_ai.js` | 指挥点：参数页截图、帮助页、操作页标签、电脑下令时指挥点轮询 | 数字随下令减少 |

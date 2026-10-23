@@ -29,7 +29,7 @@
 
   const typ = L => TYPES[L.type];
   const humanCount = () => G.players.filter(p => p.human).length;
-  const pname = id => (G.players[id].human ? (humanCount() === 1 ? tr('you') : tr('pN', id + 1)) : (G.aiStyle && G.aiStyle[id] ? tr('ai_' + ((G.aiLevel && G.aiLevel[id]) || 'normal')) + '·' + tr('st_' + G.aiStyle[id]) : tr('cpu'))) + '·' + nameOf(id);
+  const pname = id => (G.players[id].human ? (humanCount() === 1 ? tr('you') : tr('pN', id + 1)) : (G.aiStyle && G.aiStyle[id] ? tr('ai_' + ((G.aiLevel && G.aiLevel[id]) || 'normal')) + '·' + styleText(id) : tr('cpu'))) + '·' + nameOf(id);
   const pnameB = id => '【' + pname(id) + '】';       // in sentences a nation's name sits in brackets so it is easy to spot
   // ---------- names: each zone, city and legion has a fixed id; the name is a label on it ----------
   const ZPRE = ['落雁', '青石', '赤水', '寒鸦', '金沙', '斗鸡', '白马', '黑松', '铁门', '琥珀', '卧龙', '鹿鸣', '炽焰', '苍狼', '月牙', '铜鸾', '烟雨', '石窟', '米仓', '空城'], ZSUF = ['原', '岭', '川', '滩', '谷', '坡', '林', '坪', '渡', '关'], NAME_MAX = 12;
@@ -232,6 +232,8 @@
     G = { ...g, Z, phys, link: Int32Array.from(phys), X, Y, lg, cv: null, cvVer: 0, fx: [], pops: [], cp: [], reach: [], aiRunning: false, busy: false, sel: -1, hover: -1, mode: null, focus: -1, flash: '', blink: -1, gid: ++gameSeq, ver: (g.ver || 0) + 1 };
     if (!G.wasCity) { G.wasCity = new Uint8Array(total); for (let c = 0; c < total; c++) if (G.def[c] >= CITY_MIN) G.wasCity[c] = 1; }       // saves from before the one-time new-city bonus
     if (!Array.isArray(G.aiStyle) || G.aiStyle.length !== G.players.length) G.aiStyle = G.players.map(() => pickStyle('random'));       // saves from before computer styles
+    G.aiStyle = G.aiStyle.map(x => pickStyle(x));       // saves from before the styles were renamed
+    if (!Array.isArray(G.aiDyn) || G.aiDyn.length !== G.players.length) G.aiDyn = G.players.map(() => ({ a: false, b: false }));       // saves from before the changing styles
     if (!Array.isArray(G.hate) || G.hate.length !== G.players.length) G.hate = G.players.map(() => G.players.map(() => 0));
     if (!Array.isArray(G.intent) || G.intent.length !== G.players.length) G.intent = G.players.map(() => []);
     G.intent = G.intent.map(x => Array.isArray(x) ? x : x ? [{ id: 0, hist: [[G.round, '']], until: G.round + 40, str: 0, last: 0, ...x }] : []);       // older saves held one idea per nation
@@ -269,12 +271,15 @@
     G.cpool = shuffle([...lib.city]);
     feed.length = 0;
     const ids = [...Array(P).keys()];
-    for (const id of ids) G.players.push({ id, human: id < S.humans, everHuman: id < S.humans, stock: 300, pending: [], income: 0, upkeep: 0, alive: true, men: 0, cityCost: 0 });
+    rosterSync();                                          // the new-game rows: who plays, face, name, level, style and switches, starting stock
+    for (const id of ids) G.players.push({ id, human: NGR[id].human, everHuman: NGR[id].human, stock: NGR[id].stock, pending: [], income: 0, upkeep: 0, alive: true, men: 0, cityCost: 0 });
     G.order = shuffle([...ids]); G.stats = []; G.aiLog = []; applyParams();
-    G.aiStyle = ids.map(() => pickStyle('random'));       // one style and one level per nation, drawn at random; each can be changed in the panel
+    G.aiStyle = ids.map(i => pickStyle(NGR[i].style));     // "random" is drawn here, and the row shows what came out
+    NGR.forEach((r, i) => { r.drawn = r.style === 'random' ? G.aiStyle[i] : null; });
+    G.aiDyn = ids.map(i => ({ a: NGR[i].a, b: NGR[i].b, next: DYN_EVERY + 1 }));
     G.hate = ids.map(() => ids.map(() => 0)); G.intent = ids.map(() => []); G.ihist = []; G.iseq = 0;
-    G.aiLevel = ids.map(() => ['easy', 'normal', 'hard'][rnd(3)]);
-    assignAvatars(ids, shuffle([...lib.nation]));
+    G.aiLevel = ids.map(i => NGR[i].level);
+    G.av = ids.map(i => NGR[i].img ? -1 : NGR[i].av); G.avImg = ids.map(i => NGR[i].img || null); G.nnames = ids.map(i => NGR[i].name); avReset();
     // one big city per owned zone
     for (const p of ids) {
       const all = G.land.filter(c => G.owner[c] === p);

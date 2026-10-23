@@ -11,15 +11,15 @@
     const sh = liveShares(), shown = ai.filter(x => x.id === aiFilter);
     let h = shown.length ? '' : `<p class="note">${tr('aiPick')}</p>`;
     for (const P of shown) {
-      const p = P.id, plan = (G._plan && G._plan[p]) || null;
+      const p = P.id;
       const zones = G.Z.filter(z => { const m = sh[z.id]; return m && m.has(p); }).length;
       const I = (G.intent && G.intent[p]) || [], act = G.aiGo && G.aiGo[p] && I.find(x => x.id === G.aiGo[p].id);
       const goTxt = I.length ? tr('aiIntents', I.length, I.filter(x => x.by === 'you').length, I.filter(x => x.by !== 'you').length) + (act ? ' · ' + tr('aiDoing', intentText(act)) : '') : tr('aiGoNone');
       const hs = (G.hate && G.hate[p] || []).map((v, q) => [q, v]).filter(([q, v]) => q !== p && v >= 20 && G.players[q].alive).sort((a, b) => b[1] - a[1]).slice(0, 3);
       const hateTxt = hs.length ? tr('aiHate', hs.map(([q, v]) => `${nameOf(q)} ${Math.round(v)}`).join('、')) : '';
       const opt = (list, cur, pre) => list.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${tr(pre + v)}</option>`).join('');
-      h += `<div class="tdr aicard"><i style="background:${hue(p)}"></i><span><b><img class="avp" src="${avatarURL(p)}" alt="">${esc(pname(p))}</b><span class="aisels"><select data-aip="${p}" data-k="lv" title="${tr('aiLevelL')}">${opt(['easy', 'normal', 'hard'], (G.aiLevel && G.aiLevel[p]) || 'normal', 'ai_')}</select><select data-aip="${p}" data-k="st" title="${tr('aiStyleL')}">${opt(['balanced', 'inf', 'art', 'fort', 'choke', 'pincer', 'cut'], G.aiStyle && G.aiStyle[p], 'st_')}</select><button class="btn sm" data-avp="${p}">${tr('avBtn')}</button><button class="btn sm itbtn" data-intent="${p}">${tr("intentBtn")}</button></span>`
-        + `<small>${esc(tr('aiState', cities(p).length, zones, P.stock))}</small><small>${esc(goTxt)}${plan && plan.note ? ' · ' + esc(plan.note) : ''}</small>${hateTxt ? `<small>${esc(hateTxt)}</small>` : ''}</span></div>`;
+      h += `<div class="tdr aicard"><i style="background:${hue(p)}"></i><span><b><img class="avp" src="${avatarURL(p)}" alt="">${esc(pname(p))}</b><span class="aisels"><select data-aip="${p}" data-k="lv" title="${tr('aiLevelL')}">${opt(['easy', 'normal', 'hard'], (G.aiLevel && G.aiLevel[p]) || 'normal', 'ai_')}</select><select data-aip="${p}" data-k="st" title="${tr('aiStyleL')}">${opt(['steady', 'wave', 'heavy', 'hold'], G.aiStyle && G.aiStyle[p], 'st_')}</select><label class="dyn" title="${tr('dynATip')}"><input type="checkbox" data-aip="${p}" data-dyn="a" ${dynOf(p).a ? 'checked' : ''}>${tr('dynA')}</label><label class="dyn" title="${tr('dynBTip')}"><input type="checkbox" data-aip="${p}" data-dyn="b" ${dynOf(p).b ? 'checked' : ''}>${tr('dynB')}</label><button class="btn sm" data-avp="${p}">${tr('avBtn')}</button><button class="btn sm itbtn" data-intent="${p}">${tr("intentBtn")}</button></span>`
+        + `<small>${esc(tr('aiState', cities(p).length, zones, P.stock))}</small><small>${esc(goTxt)}</small>${hateTxt ? `<small>${esc(hateTxt)}</small>` : ''}</span></div>`;
     }
     const logs = (G.aiLog || []).filter(n => n.p === aiFilter).slice(0, 150);
     h += `<h4>${tr('aiLogTitle')}</h4>` + (logs.length ? logs.map(n => `<div class="tdr" ${n.go ? `data-go="${n.go}"` : ''}><i style="background:${hue(n.p)}"></i><span class="aiw">${esc(tr('aiRound', n.r))} ${esc(n.t)}</span></div>`).join('') : `<div class="sub tde">${tr('aiEmpty')}</div>`);

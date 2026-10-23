@@ -350,7 +350,7 @@
       body.appendChild(namingBar());
       const p = AVP.p, w = document.createElement('div'), on = G.avImg && G.avImg[p] ? 'u:' + G.avImg[p] : 'b:' + faceIdx(p);
       const btn = (attr, src, label, sel, key) => { const u = faceUser(key, p); return `<button class="avo${sel ? ' on' : ''}${u >= 0 ? ' used' : ''}" ${u >= 0 ? 'disabled' : attr} ${u >= 0 ? `title="${esc(tr('avUsed', nameOf(u)))}"` : ''}><img src="${src}" alt=""><span>${u >= 0 ? esc(tr('avUsed', nameOf(u))) : esc(label || '')}</span></button>`; };
-      const who = q => G.players[q].human ? tr('avHuman') : tr('ai_' + ((G.aiLevel && G.aiLevel[q]) || 'normal')) + '·' + tr('st_' + ((G.aiStyle && G.aiStyle[q]) || 'balanced'));
+      const who = q => G.players[q].human ? tr('avHuman') : tr('ai_' + ((G.aiLevel && G.aiLevel[q]) || 'normal')) + '·' + styleText(q);
       w.className = 'avwin';
       w.innerHTML = `<div><div class="note" id="avMsg" style="margin:0 0 6px">${tr('avNameNote')}</div><div class="avlist">${G.players.map((x, q) => `<div class="avrow${q === p ? ' on' : ''}" data-avrow="${q}"><img src="${avatarURL(q)}" alt=""><input data-avn="${q}" maxlength="2" value="${esc(nameOf(q))}" spellcheck="false"><span>${esc(who(q))}${x.alive ? '' : ' · ' + tr('avDead')}</span></div>`).join('')}</div></div>`
         + `<div><h4 class="avh" style="margin-top:0">${tr('avFor', esc(nameOf(p)))}</h4><p class="note" style="margin:0 0 8px">${tr('avUniq')}</p><div class="avgrid">${SPECIES.map((sp, i) => btn(`data-avb="${i}"`, faceSprite(i).toDataURL(), spName(i), on === 'b:' + i, 'b:' + i)).join('')}${AVLIB.list.map((u, i) => btn(`data-avu="${i}"`, u, '', on === 'u:' + u, 'u:' + u)).join('')}</div>${AVLIB.list.length ? '' : `<p class="note">${tr('avNoUp')}</p>`}</div>`;
@@ -386,7 +386,8 @@
   $('mbody').addEventListener('input', e => { if (e.target.id === 'sndVol') { setVolume(+e.target.value / 100); $('sndVolO').textContent = e.target.value; } });
   $('mbody').addEventListener('change', e => { if (e.target.id === 'sndVol') snd.select(); });
   $('mSnd').addEventListener('click', () => openModal('sound'));
-  $('aiList').addEventListener('change', e => { const t = e.target.closest('select[data-aip]'); if (!t || !G) return; const p = +t.dataset.aip; if (t.dataset.k === 'lv') G.aiLevel[p] = t.value; else G.aiStyle[p] = t.value; G.ver++; autosave(); ui(true); renderAi(); });
+  $('aiList').addEventListener('change', e => { const d = e.target.closest('input[data-dyn]'); if (d && G) { const q = +d.dataset.aip; if (!G.aiDyn[q]) G.aiDyn[q] = {}; G.aiDyn[q][d.dataset.dyn] = d.checked; if (d.dataset.dyn === 'a' && d.checked) G.aiDyn[q].next = G.round + DYN_EVERY; G.ver++; autosave(); ui(true); renderAi(); return; }
+    const t = e.target.closest('select[data-aip]'); if (!t || !G) return; const p = +t.dataset.aip; if (t.dataset.k === 'lv') G.aiLevel[p] = t.value; else G.aiStyle[p] = t.value; G.ver++; autosave(); ui(true); renderAi(); });
   $('levelSel').addEventListener('change', () => { if (G) { G.aiLevel[G.cur] = $('levelSel').value; autosave(); ui(); } });
   $('styleSel').addEventListener('change', () => { if (G) { G.aiStyle[G.cur] = pickStyle($('styleSel').value); autosave(); ui(); } });
   const showWinSize = () => { const el = $('winSize'); if (!el) return; const w = window.innerWidth, h = window.innerHeight; el.textContent = `${w} × ${h}`; el.classList.toggle('small', w < 1300 || h < 800); el.title = (w < 1300 || h < 800) ? tr('winSizeSmall') : ''; };
@@ -475,7 +476,51 @@
   $('bHelp').addEventListener('click', () => { autoPause(); openModal('help'); });
   $('bSet').addEventListener('click', () => { autoPause(); openModal('menu'); });
   // new game dialog: opens by itself when there is nothing to resume
-  function openNG() { closeModal(); writeForm(); $('ngClose').hidden = !G; $('ngModal').hidden = false; }
+  // ---------- new game: one row per nation (face, name, player or computer, level, style and its two switches, starting stock) ----------
+  let NGR = [];
+  const ngFaces = () => [...AVLIB.list.map(u => ({ img: u, av: -1 })), ...SPECIES.map((_, i) => ({ img: null, av: i }))];
+  const ngKey = r => r.img || 'sp' + r.av;
+  function ngRow(i) {
+    const used = new Set(NGR.map(ngKey)), f = ngFaces().find(x => !used.has(ngKey(x))) || { img: null, av: i % SPECIES.length }, lib = nameLib().nation.filter(n => !NGR.some(r => r.name === n));
+    return { ...f, name: lib.length ? lib[rnd(lib.length)] : spName(f.av >= 0 ? f.av : i % SPECIES.length), human: false, level: 'normal', style: 'random', a: false, b: false, stock: 0 };
+  }
+  // the rows follow the number of players; the hidden "how many humans" control (also used by the tests) decides who plays when it disagrees with the rows
+  function rosterSync() {
+    const n = Math.max(2, Math.min(8, +$('sPlayers').value || 4)), h = Math.min(n, +$('sHumans').value || 0);
+    while (NGR.length < n) NGR.push(ngRow(NGR.length));
+    NGR.length = n;
+    if (NGR.filter(r => r.human).length !== h) NGR.forEach((r, i) => { r.human = i < h; });
+  }
+  const ngFaceURL = r => r.img || faceSprite(r.av).toDataURL();
+  function renderRoster() {
+    rosterSync();
+    const opt = (list, cur, pre) => list.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${tr(pre + v)}</option>`).join('');
+    $('ngRoster').innerHTML = NGR.map((r, i) => `<div class="ngr ${r.human ? 'hum' : ''}" data-r="${i}"><button class="ngav" data-ngav="${i}" title="${tr('ngFaceTip')}"><img src="${ngFaceURL(r)}" alt=""></button>`
+      + `<input class="ngnm" data-ngk="name" maxlength="2" value="${esc(r.name)}" title="${tr('ngNameTip')}">`
+      + `<select data-ngk="human"><option value="1" ${r.human ? 'selected' : ''}>${tr('ngHuman')}</option><option value="0" ${r.human ? '' : 'selected'}>${tr('ngCpu')}</option></select>`
+      + `<span class="ngai"><select data-ngk="level">${opt(['easy', 'normal', 'hard'], r.level, 'ai_')}</select><select data-ngk="style">${opt(['steady', 'wave', 'heavy', 'hold', 'random'], r.style, 'st_')}</select>`
+      + `<label title="${tr('dynATip')}"><input type="checkbox" data-ngk="a" ${r.a ? 'checked' : ''}>${tr('dynA')}</label><label title="${tr('dynBTip')}"><input type="checkbox" data-ngk="b" ${r.b ? 'checked' : ''}>${tr('dynB')}</label></span>`
+      + `<label class="ngst">${tr('ngStock')}<input type="number" data-ngk="stock" min="0" max="99999" step="100" value="${r.stock}"></label>`
+      + (r.drawn ? `<small class="ngdrawn">${tr('ngDrawn', tr('st_' + r.drawn))}</small>` : '') + `</div>`).join('');
+  }
+  $('ngRoster').addEventListener('click', e => {
+    const b = e.target.closest('button[data-ngav]'); if (!b) return;
+    const r = NGR[+b.dataset.ngav], all = ngFaces(), used = new Set(NGR.filter(x => x !== r).map(ngKey)), at = all.findIndex(x => ngKey(x) === ngKey(r));
+    for (let k = 1; k <= all.length; k++) { const f = all[(at + k) % all.length]; if (!used.has(ngKey(f))) { const wasDefault = !r.img && r.name === spName(r.av); r.img = f.img; r.av = f.av; if (wasDefault && f.av >= 0) r.name = spName(f.av); break; } }
+    renderRoster();
+  });
+  $('ngRoster').addEventListener('change', e => {
+    const t = e.target.closest('[data-ngk]'), row = e.target.closest('[data-r]'); if (!t || !row) return;
+    const r = NGR[+row.dataset.r], k = t.dataset.ngk;
+    if (k === 'name') { const v = t.value.trim(); if ([...v].length === NAME_LEN.nation && !NGR.some(x => x !== r && x.name === v)) r.name = v; }
+    else if (k === 'human') { r.human = t.value === '1'; $('sHumans').value = NGR.filter(x => x.human).length; }
+    else if (k === 'a' || k === 'b') r[k] = t.checked;
+    else if (k === 'stock') r.stock = Math.max(0, Math.min(99999, Math.round(+t.value) || 0));
+    else r[k] = t.value;
+    renderRoster();
+  });
+  $('ngReroll').addEventListener('click', () => { NGR = []; renderRoster(); });
+  function openNG() { closeModal(); writeForm(); renderRoster(); $('ngClose').hidden = !G; $('ngModal').hidden = false; }
   function closeNG() { $('ngModal').hidden = true; }
   $('ngClose').addEventListener('click', closeNG);
   $('mNew').addEventListener('click', openNG);
@@ -635,7 +680,7 @@
   $('overBtn').addEventListener('click', newGame);
   $('sTb').addEventListener('change', () => { S.tbs = Math.max(1, Math.min(9, Math.round(+$('sTb').value) || 1)); try { localStorage.setItem('idlewars-command-1', JSON.stringify(S)); } catch (e) {} });
   $('sStep').addEventListener('change', () => { S.step = +$('sStep').value || 1.5; try { localStorage.setItem('idlewars-command-1', JSON.stringify(S)); } catch (e) {} });
-  $('sPlayers').addEventListener('input', () => { $('sPlayersOut').textContent = $('sPlayers').value; });
+  $('sPlayers').addEventListener('input', () => { $('sPlayersOut').textContent = $('sPlayers').value; renderRoster(); });
   document.addEventListener('keydown', e => {
     if (!G || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
     if (e.key === 'Escape' && !$('ngModal').hidden && G) { closeNG(); return; }
