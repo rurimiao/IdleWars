@@ -2,7 +2,7 @@
 # 在仓库根目录运行：把 src/ 里的文件按顺序拼成 idlewars.html，再做语法检查
 set -e
 cd "$(dirname "$0")"
-cat src/page.html src/core.js src/text.js src/avatars.js src/sound_data.js src/sound.js src/settings.js src/mapgen.js src/maps.js \
+cat src/page.html src/core.js src/text.js src/avatars.js src/sound_data.js src/sound.js src/settings.js src/mapgen.js \
     src/game.js src/ai.js src/ui.js src/panel_list.js src/stats.js src/panel_orders.js src/panel_players.js src/controls.js > idlewars.html
 python3 - <<'PY'
 s = open('idlewars.html').read()

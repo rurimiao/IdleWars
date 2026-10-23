@@ -1,6 +1,6 @@
 
   // ---------- settings ----------
-  const DEFAULTS = { players: 4, humans: 1, obs: 'mid', tbs: 1, cpBase: 4, cpDiv: 200, ai: 'normal', speed: '1', fog: false, clr: false, chk: 50, step: 1.5, hitInf: 50, hitArt: 30, share: 50, tax: 50, upkeep: 20, buildCost: 5, supCap: 2, cityStart: 300, cityMin: 200, cityMax: 1000, capBonus: 3000, plunder: 10, buildBonus: 2000, breakBonus: 2000, aiStyle: 'random', names: { nation: [], city: [], zone: [] }, zone: 200, u: [{ budget: 2, rmin: 1, rmax: 2, min: 5, cost: 20, build: 1, eat: 2, dmg: 1, per: 1, cb: 1, bsp: 2, sg: 1 }, { budget: 1, rmin: 2, rmax: 5, min: 3, cost: 80, build: 3, eat: 8, dmg: 3, per: 3, cb: 1, bsp: 5, sg: 4 }] };
+  const DEFAULTS = { players: 4, homeZ: 6, humans: 1, obs: 'mid', tbs: 1, cpBase: 4, cpDiv: 200, ai: 'normal', speed: '1', fog: false, clr: false, chk: 50, step: 1.5, hitInf: 50, hitArt: 30, share: 50, tax: 50, upkeep: 20, buildCost: 5, supCap: 2, cityStart: 300, cityMin: 200, cityMax: 1000, capBonus: 3000, plunder: 10, buildBonus: 2000, breakBonus: 2000, aiStyle: 'random', names: { nation: [], city: [], zone: [] }, zone: 200, u: [{ budget: 2, rmin: 1, rmax: 2, min: 5, cost: 20, build: 1, eat: 2, dmg: 1, per: 1, cb: 1, bsp: 2, sg: 1 }, { budget: 1, rmin: 2, rmax: 5, min: 3, cost: 80, build: 3, eat: 8, dmg: 3, per: 3, cb: 1, bsp: 5, sg: 4 }] };
   let S = { ...DEFAULTS };
   try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('idlewars-command-1') || '{}') }; } catch (e) {}
   S.speed = '1';       // no speed setting any more: every step waits for the "step pause" setting
@@ -27,12 +27,12 @@
   }
   function writeForm() {
     if (!['few', 'mid', 'many'].includes(S.obs)) S.obs = 'mid';
-    $('sPlayers').value = S.players; $('sPlayersOut').textContent = S.players; $('sHumans').value = S.humans;
+    $('sPlayers').value = S.players; $('sPlayersOut').textContent = S.players; $('sHomeZ').value = S.homeZ || 6; $('sHomeZOut').textContent = S.homeZ || 6; $('sHumans').value = S.humans;
     $('sObs').value = S.obs; $('sSpeed').value = S.speed; $('sFog').checked = !!S.fog; $('sClr').checked = !!S.clr; $('sCp').value = S.chk || 50; $('sStep').value = String(S.step || 1.5); $('sTb').value = String(S.tbs || 1);
   }
   const clampHit = (v, dflt) => Math.max(10, Math.min(100, Math.round((+v || dflt || 50) / 5) * 5));
   function readForm() {
-    S = { players: +$('sPlayers').value, humans: +$('sHumans').value, obs: $('sObs').value, speed: $('sSpeed').value, fog: $('sFog').checked, clr: $('sClr').checked, chk: Math.max(10, Math.min(1000, Math.round(+$('sCp').value) || 50)), step: +$('sStep').value || 1.5, tbs: Math.max(1, Math.min(9, Math.round(+$('sTb').value) || 1)), hitInf: clampHit(S.hitInf, 50), hitArt: clampHit(S.hitArt, 30), zone: S.zone, u: S.u, anaGap: S.anaGap, names: S.names, share: S.share, tax: S.tax, capBonus: S.capBonus, plunder: S.plunder, buildBonus: S.buildBonus, breakBonus: S.breakBonus, cityStart: S.cityStart, cityMin: S.cityMin, cityMax: S.cityMax, upkeep: S.upkeep, cpBase: S.cpBase, cpDiv: S.cpDiv, buildCost: S.buildCost, supCap: S.supCap };
+    S = { players: +$('sPlayers').value, homeZ: Math.max(3, Math.min(10, +$('sHomeZ').value || 6)), humans: +$('sHumans').value, obs: $('sObs').value, speed: $('sSpeed').value, fog: $('sFog').checked, clr: $('sClr').checked, chk: Math.max(10, Math.min(1000, Math.round(+$('sCp').value) || 50)), step: +$('sStep').value || 1.5, tbs: Math.max(1, Math.min(9, Math.round(+$('sTb').value) || 1)), hitInf: clampHit(S.hitInf, 50), hitArt: clampHit(S.hitArt, 30), zone: S.zone, u: S.u, anaGap: S.anaGap, names: S.names, share: S.share, tax: S.tax, capBonus: S.capBonus, plunder: S.plunder, buildBonus: S.buildBonus, breakBonus: S.breakBonus, cityStart: S.cityStart, cityMin: S.cityMin, cityMax: S.cityMax, upkeep: S.upkeep, cpBase: S.cpBase, cpDiv: S.cpDiv, buildCost: S.buildCost, supCap: S.supCap };
     S.players = Math.max(2, Math.min(8, S.players)); S.humans = Math.min(S.humans, S.players);
     applyParams();
     try { localStorage.setItem('idlewars-command-1', JSON.stringify(S)); } catch (e) {}

@@ -201,7 +201,7 @@
   }
 
   // ---------- new game ----------
-  const VOID_SHARE = { few: 0.2, mid: 0.3, many: 0.4 };
+  const HOLES = { few: 0.4, mid: 1, many: 1.8 };       // small holes per wedge, for the "holes" setting
 
   // ---------- saving: one automatic save in the browser, plus save/load as a file ----------
   const SAVE_KEY = 'idlewars-command-save-1', SAVE_SKIP = new Set(['Z', 'phys', 'link', 'X', 'Y', 'lg', 'cv', 'cvVer', 'fx', 'pops', 'cp', 'reach', 'aiRunning', 'camLock', 'aiShow', 'paused', 'busy', 'sel', 'hover', 'mode', 'focus', 'flash', 'blink', 'gid']);
@@ -257,8 +257,7 @@
   }
   function newGame() {
     readForm();
-    const P = S.players, cpp = 300, fixed = NGmap >= 0 && MAPS[P] ? MAPS[P][NGmap] : null;       // a fixed map picked in the new-game panel, or a new random one
-    const g = fixed ? loadMap(fixed) : genWorld(P, cpp, VOID_SHARE[S.obs] || 0.3, 6);
+    const P = S.players, g = loadMap(ngMapNow());       // the map shown in the new-game panel
     const total = COLS * ROWS;
     G = { Z: g.Z, zone: g.zone, phys: g.phys, link: g.link, X: g.X, Y: g.Y, land: g.land, owner: g.owner, gap: g.gap,
       lg: new Array(total).fill(null), def: new Uint16Array(total), wasCity: new Uint8Array(total), co: new Int16Array(total).fill(-1), cpEvery: S.chk || 50, cpCount: 0, promptedAt: 0, zname: [], zpre: [], cname: {}, lgInfo: {}, nhist: {},

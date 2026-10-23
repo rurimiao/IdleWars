@@ -8,7 +8,7 @@
       turn: '回合', endTurn: '结束回合', soundOn: '音效：开', soundOff: '音效：关', cols: '大城市 · 兵力 · 物资',
       players: '玩家数量', humans: '真人玩家', h0: '0（观战）', h1: '1', h2: '2（同屏轮流）', h3: '3（同屏轮流）',
       
-      obstacles: '空洞', o_few: '少（20%）', o_mid: '中（30%）', o_many: '多（40%）',
+      obstacles: '空洞', o_few: '少', o_mid: '中', o_many: '多',
       ai: 'AI 难度', ai_easy: '简单', ai_normal: '普通', ai_hard: '困难',
       
       fog: '战争迷雾', fogS: '开启后只看得见自己兵团和大城市 8 格以内的敌军，也看不到敌方补给线。空洞、区域和所有大城市一直可见。',
@@ -30,7 +30,7 @@
       
       
       aiBuild: (c, n, t) => `在【${c}】下单造 ${n} 人${t}`, aiStrike: (c, f) => `集结 ${f} 人，决定进攻【${c}】`, aiSplit: t => `兵分两路：另一路去${t}`, aiForward: (l, z, c) => `远征【${c}】路太远：派${l}去${z}修前进城`, supplyLineL: '显示补给线', ffTipHuman: '把这一回合剩下的部分一口气走完。会先问你已下的命令是保留还是清空。', ffBtn: '快进', ffTip: '把这一回合剩下的部分一口气走完，到下一回合开始为止', tdLoss: (p, t) => `补给损失 ${p}%${t ? `，在途 ${t} 回合` : ''}`, tdCut: '补给被切断', tdLinked: '补给畅通', tdSup: (s, c, d, h) => `物资储备 ${s} · 每回合消耗 ${c} · 够吃 ${d} 回合 · 备粮 ${h}`, cancelMode: '取消', todoTab: '操作', tdCancel: '取消这条命令', tdNoOrders: '还没下任何命令。', tdNone: '没有了。',
-      tdMarch: (l, z) => `${l} 行军去 ${z}`, tdAtk: (l, t) => `${l} 攻击 ${t}`, tdRep: (l, c) => `${l} 修 ${c}`, tdSplit: (l, n) => `${l} 拆出 ${n} 人`, tdMerge: (l, n) => `${l} 分 ${n} 人并入邻队`, tdBuild: (c, n, t) => `${c}：造 ${n} 人${t}`, opsEmpty: '选中兵团或大城市后，在这里下命令。', opsWait: p => `当前正在操作的玩家为【${p}】，还没轮到你。`, opsWaitList: '轮到你时，这里列出你本回合下的命令。', opsOver: '对局已结束。', selAi: '电脑正在思考……', wideWarn: '建议宽屏使用', zNobodyWhy: '区里没有大城市，是无主区，谁也拿不到产出。在这里修成一座城，整区产出就归你。', zRule: n => `区里共 ${n} 座大城市，产出按城数分；兵团站在这里不算。`, zNoShareLine: a => `${a} 只有兵团在这里，不分产出`, zCities: s => `城池 ${s}`, mgRules: '电脑与规则', ngSecGame: '对局', ngMap: '地图', ngMapRand: '随机', ngMapN: n => `地图 ${n}`, ngMapTip: '随机：每局现生成一张；地图 1 到 3：挑过平衡的固定地图（各家地盘、离敌人的远近、周围的中立大区都差不多）。选固定地图时“空洞”不起作用。', statsBtn: '统计', statsTitle: '统计', cpStats: '看统计', stScore: '得分', stUnits: '兵团', stCity: '城市', stRes: '资源', stCurve: '曲线', stRound: n => `第 ${n} 回合`, stNation: '国家', stScUnits: '兵团分', stScCity: '城市分', stScRes: '资源分', stScTotal: '总分',
+      tdMarch: (l, z) => `${l} 行军去 ${z}`, tdAtk: (l, t) => `${l} 攻击 ${t}`, tdRep: (l, c) => `${l} 修 ${c}`, tdSplit: (l, n) => `${l} 拆出 ${n} 人`, tdMerge: (l, n) => `${l} 分 ${n} 人并入邻队`, tdBuild: (c, n, t) => `${c}：造 ${n} 人${t}`, opsEmpty: '选中兵团或大城市后，在这里下命令。', opsWait: p => `当前正在操作的玩家为【${p}】，还没轮到你。`, opsWaitList: '轮到你时，这里列出你本回合下的命令。', opsOver: '对局已结束。', selAi: '电脑正在思考……', wideWarn: '建议宽屏使用', zNobodyWhy: '区里没有大城市，是无主区，谁也拿不到产出。在这里修成一座城，整区产出就归你。', zRule: n => `区里共 ${n} 座大城市，产出按城数分；兵团站在这里不算。`, zNoShareLine: a => `${a} 只有兵团在这里，不分产出`, zCities: s => `城池 ${s}`, mgRules: '电脑与规则', ngSecGame: '对局', ngMap: '地图', ngMapNew: '换一张', ngMapSave: '存下来', ngMapSaved: '存过的图', ngMapDel: '删掉这张', ngMapTip: '每家一块扇形，绕中心复制，各家一模一样；中间是公共区。开局就用这张。', ngEdge_wall: '边界：空洞墙', ngEdge_band: '边界：两层中立区', homeZ: '每家大区数', statsBtn: '统计', statsTitle: '统计', cpStats: '看统计', stScore: '得分', stUnits: '兵团', stCity: '城市', stRes: '资源', stCurve: '曲线', stRound: n => `第 ${n} 回合`, stNation: '国家', stScUnits: '兵团分', stScCity: '城市分', stScRes: '资源分', stScTotal: '总分',
       stScoreNote: '兵团分 =（造兵花费 + 击杀价值）÷ 10；城市分 =（占领的城防 + 修复的城防 + 摧毁的敌方城防）÷ 10；资源分 = 总收入 ÷ 50。', stBuilt: '造兵 步 / 炮', stKilled: '击杀 步 / 炮', stLostB: '战死 步 / 炮', stLostS: '断粮损失', stKillV: '击杀价值', stWipe: '歼灭兵团', stRout: '击溃兵团', stWiped: '被歼灭', stRouted: '被击溃', stUnitsNote: '数字都是人数；击杀价值按被击杀兵力的造价算。',
       stNow: '现有城市', stCaptured: '占领城市', stCityLost: '失去城市', stRazed: '摧毁敌方城防', stRepaired: '修复城防', stIncome: '总收入', stSpend: '总消耗', stCityC: '城防养护', stShipC: '补给运输', stShipL: '其中运输损耗', stBuildC: '造兵', stMeals: '兵团口粮*', stRepairC: '修城*',
       stResNote: '总消耗 = 城防养护 + 补给运输 + 造兵。带 * 的是兵团用掉已运到的补给，不重复计入总消耗；“其中运输损耗”已包含在补给运输里。',
@@ -43,6 +43,8 @@
         '<b>固守</b>：不主动去打别人的城。',
         '>野战兵力退回城里修城防；谁打了它，它会就近还手。',
         '<b>新游戏面板</b>：每家一行选风格；下面的按钮能一次设成全部某一种，或给每家随机抽一种。',
+        '>地图：每家一块扇形，有“每家大区数”个大区，绕中心复制，各家一模一样；相邻两家之间是一道空洞墙，或两层中立大区；中间是公共区（人数÷2 个大区，奇数人数合成 1 个）。',
+        '>“换一张”重新随机；“存下来”把这张存在浏览器里，以后点小图就能再用；“空洞”管小空洞多少。',
         '<b>两个多变开关</b>：每家单独开关，默认都开，名字后面会写出来，例如“稳健+动态多变+局势多变”。',
         '>动态多变：每 10 回合重抽一次风格。',
         '>局势多变：丢了城就转固守；连续 5 回合没挨打、兵力又比别家平均多，就转去进攻。换完 5 回合内不再换。',

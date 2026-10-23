@@ -505,27 +505,49 @@
     $('ngStyleBtns').innerHTML = ngStyles.map(k => `<button class="btn alt sm" data-ngall="${k}">${tr('ngAll', tr('st_' + k))}</button>`).join('') + `<button class="btn alt sm" data-ngall="random">${tr('ngRandStyle')}</button>`;
     renderMaps();
   }
-  // the map: random (made at the start) or one of the fixed maps for this many nations, each shown as a small picture (nation land in its colour, cities as dots)
-  let NGmap = -1;
-  function mapThumb(m, cv) {
-    const W = 240, H = 160, ctx = cv.getContext('2d'); cv.width = W; cv.height = H; ctx.clearRect(0, 0, W, H);
+  // the map: made in the panel (a new one for every change of nations or zones, or on "new map"); liked maps are kept in the browser
+  const MAPS_KEY = 'idlewars-maps';
+  let NGcur = null;
+  const ngForm = () => ({ P: Math.max(2, Math.min(8, +$('sPlayers').value || 4)), n: Math.max(3, Math.min(10, +$('sHomeZ').value || 6)) });
+  const savedMaps = () => { try { const a = JSON.parse(localStorage.getItem(MAPS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+  function ngMapNow() {
+    const { P, n } = ngForm();
+    if (!NGcur || NGcur.P !== P || NGcur.k !== n) { const g = genSymWorld(P, n, { holes: HOLES[$('sObs').value] ?? 1 }); NGcur = { P, ...packMap(g) }; }
+    return NGcur;
+  }
+  function mapThumb(m, cv, W = 240, H = 240) {
+    const ctx = cv.getContext('2d'); cv.width = W; cv.height = H; ctx.clearRect(0, 0, W, H);
     const zone = []; for (const r of m.zones.split(',')) { const [a, b] = r.split('.'), z = parseInt(a, 36) - 1, n = parseInt(b, 36); for (let k = 0; k < n; k++) zone.push(z); }
     const s = Math.min(W / (m.cols + 0.5), H / (m.rows * 0.866 + 0.2)), ox = (W - s * (m.cols + 0.5)) / 2, oy = (H - s * m.rows * 0.866) / 2;
     const xy = i => { const c = i % m.cols, r = (i / m.cols) | 0; return [ox + s * (c + 0.5 + 0.5 * (r & 1)), oy + s * (r * 0.866 + 0.5)]; };
     const sum = new Map();
-    zone.forEach((z, i) => { if (z < 0) return; const [x, y] = xy(i), h = m.home[z]; ctx.fillStyle = h >= 0 ? NATION_COLORS[h % NATION_COLORS.length] : '#5d6b62'; ctx.globalAlpha = h >= 0 ? 0.85 : 0.6; ctx.fillRect(x - s * 0.55, y - s * 0.55, s * 1.1, s * 1.1); const t = sum.get(z) || [0, 0, 0, []]; t[0] += x; t[1] += y; t[2]++; t[3].push([x, y]); sum.set(z, t); });
+    zone.forEach((z, i) => { if (z < 0) return; const [x, y] = xy(i), h = m.home[z]; ctx.fillStyle = h >= 0 ? NATION_COLORS[h % NATION_COLORS.length] : '#7d8a80'; ctx.globalAlpha = h >= 0 ? 0.85 : 0.7; ctx.fillRect(x - s * 0.55, y - s * 0.55, s * 1.1, s * 1.1); const t = sum.get(z) || [0, 0, 0, []]; t[0] += x; t[1] += y; t[2]++; t[3].push([x, y]); sum.set(z, t); });
+    // zone borders, so the neutral zones show as zones
+    ctx.globalAlpha = 0.55; ctx.fillStyle = '#0d1210';
+    zone.forEach((z, i) => { if (z < 0) return; const c = i % m.cols, r = (i / m.cols) | 0, [x, y] = xy(i); if (c + 1 < m.cols && zone[i + 1] >= 0 && zone[i + 1] !== z) ctx.fillRect(x + s * 0.4, y - s * 0.5, s * 0.2, s); const dn = i + m.cols + (r & 1 ? 1 : 0); if (r + 1 < m.rows && zone[dn] >= 0 && zone[dn] !== z) ctx.fillRect(x - s * 0.1, y + s * 0.38, s * 0.6, s * 0.24); });
     ctx.globalAlpha = 1; ctx.fillStyle = '#fff';
-    for (const [z, t] of sum) { if (m.home[z] < 0) continue; const cx = t[0] / t[2], cy = t[1] / t[2]; let b = t[3][0], bd = 1e9; for (const q of t[3]) { const d = (q[0] - cx) ** 2 + (q[1] - cy) ** 2; if (d < bd) { bd = d; b = q; } } ctx.beginPath(); ctx.arc(b[0], b[1], Math.max(2, s * 0.9), 0, 6.283); ctx.fill(); }
+    if (W < 100) return;
+    for (const [z, t] of sum) { if (m.home[z] < 0) continue; const cx = t[0] / t[2], cy = t[1] / t[2]; let b = t[3][0], bd = 1e9; for (const q of t[3]) { const d = (q[0] - cx) ** 2 + (q[1] - cy) ** 2; if (d < bd) { bd = d; b = q; } } ctx.beginPath(); ctx.arc(b[0], b[1], Math.max(1.5, s * 0.7), 0, 6.283); ctx.fill(); }
   }
   function renderMaps() {
-    const n = Math.max(2, Math.min(8, +$('sPlayers').value || 4)), ms = MAPS[n] || [];
-    if (NGmap >= ms.length) NGmap = -1;
-    $('ngMaps').innerHTML = `<button class="btn alt sm ${NGmap < 0 ? 'on' : ''}" data-ngmap="-1" title="${tr('ngMapTip')}"><span class="rnd">?</span>${tr('ngMapRand')}</button>`
-      + ms.map((_, i) => `<button class="btn alt sm ${NGmap === i ? 'on' : ''}" data-ngmap="${i}" title="${tr('ngMapTip')}"><canvas></canvas>${tr('ngMapN', i + 1)}</button>`).join('');
-    $('ngMaps').querySelectorAll('canvas').forEach((c, i) => mapThumb(ms[i], c));
-    $('sObs').disabled = NGmap >= 0;
+    const m = ngMapNow(), list = savedMaps().map((x, i) => [x, i]).filter(([x]) => x.P === m.P), has = list.some(([x]) => x.zones === m.zones);
+    $('ngMaps').innerHTML = `<canvas class="big" title="${tr('ngMapTip')}"></canvas><div class="side"><span class="note">${tr('ngEdge_' + (m.edge || 'wall'))}</span>`
+      + `<button class="btn sm" data-ngnew>${tr('ngMapNew')}</button><button class="btn alt sm" data-ngsave ${has ? 'disabled' : ''}>${tr('ngMapSave')}</button>`
+      + (list.length ? `<span class="note">${tr('ngMapSaved')}</span><div class="saved">${list.map(([x, i]) => `<button class="btn alt sv ${x.zones === m.zones ? 'on' : ''}" data-ngpick="${i}"><canvas></canvas><span class="x" data-ngdel="${i}" title="${tr('ngMapDel')}">✕</span></button>`).join('')}</div>` : '') + `</div>`;
+    mapThumb(m, $('ngMaps').querySelector('.big'), 400, 400);
+    $('ngMaps').querySelectorAll('.sv canvas').forEach((c, k) => mapThumb(list[k][0], c, 120, 120));
   }
-  $('ngMaps').addEventListener('click', e => { const b = e.target.closest('[data-ngmap]'); if (!b) return; NGmap = +b.dataset.ngmap; renderMaps(); });
+  $('ngMaps').addEventListener('click', e => {
+    const t = e.target.closest('[data-ngdel],[data-ngpick],[data-ngnew],[data-ngsave]'); if (!t) return;
+    const all = savedMaps(), put = a => { try { localStorage.setItem(MAPS_KEY, JSON.stringify(a)); } catch (err) { /* storage full or blocked */ } };
+    if (t.dataset.ngdel != null) { e.stopPropagation(); all.splice(+t.dataset.ngdel, 1); put(all); }
+    else if (t.dataset.ngpick != null) { const m = all[+t.dataset.ngpick]; if (m) { NGcur = m; $('sHomeZ').value = m.k; $('sHomeZOut').textContent = m.k; } }
+    else if (t.dataset.ngnew != null) NGcur = null;
+    else if (t.dataset.ngsave != null && NGcur) { all.push(NGcur); put(all); }
+    renderMaps();
+  });
+  $('sHomeZ').addEventListener('input', () => { $('sHomeZOut').textContent = $('sHomeZ').value; renderMaps(); });
+  $('sObs').addEventListener('change', () => { NGcur = null; renderMaps(); });
   $('ngRoster').addEventListener('click', e => {
     const b = e.target.closest('button[data-ngav]'); if (!b) return;
     const r = NGR[+b.dataset.ngav], all = ngFaces(), used = new Set(NGR.filter(x => x !== r).map(ngKey)), at = all.findIndex(x => ngKey(x) === ngKey(r));
@@ -720,7 +742,7 @@
   new ResizeObserver(resize).observe($('boardWrap'));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => requestDraw());
   new MutationObserver(() => requestDraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.__game = { genWorld, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
+  window.__game = { genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
     setLang: l => { lang = l; applyLang(); }, setSpeed: v => { S.speed = String(v); }, screen: i => { const r = cvEl.getBoundingClientRect(); return [r.left + view.cw / 2 + (G.X[i] - view.cx) * view.s, r.top + view.ch / 2 + (G.Y[i] - view.cy) * view.s]; } };
 
   applyParams(); writeForm(); resize(); applyLang();
