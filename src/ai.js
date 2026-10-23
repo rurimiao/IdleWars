@@ -98,8 +98,9 @@
     const front = c => { let d = 99; for (const F of foes) { const e = hexDist(c, F.cell); if (e < d) d = e; } return d; };
     const fd = new Map(cts.map(c => [c, front(c)]));
     cts.sort((a, b) => fd.get(a) - fd.get(b));
-    const Rg = G._rally && G._rally[p], gathering = Rg && G.aiGo && G.aiGo[p] && Rg.id === G.aiGo[p].id && !Rg.go;       // gathering a wave for a strike: keep less money back, more men
-    const reserve = upk * (gathering ? 0.5 : 1.2) + 100, limit = Math.max(260, (P.income || 400) * k.grow);
+    // gathering a wave for a strike: stock up food for the campaign before buying more men (see campaignFood)
+    const Rg = G._rally && G._rally[p], gathering = Rg && G.aiGo && G.aiGo[p] && Rg.id === G.aiGo[p].id && !Rg.go;
+    const reserve = upk * 1.2 + 100 + (gathering ? campaignFood(p, p).need : 0), limit = Math.max(260, (P.income || 400) * k.grow);
     for (const c of cts) {
       if (P.stock < reserve + 60 || upk >= limit) break;
       const sty = aiStyleOf(p), type = art < inf * sty.art && P.stock > reserve + 200 ? 1 : 0, T = TYPES[type];
@@ -107,6 +108,15 @@
       while (n >= T.min && !buyOK(c, p, type, n)) n--;
       if (n >= T.min && orderBuildUnits(p, c, type, n)) { aiNote(p, tr('aiBuild', cityName(c), n, tr('ty_' + T.k)), 'c:' + c, true); upk += n * T.eat; if (type === 0) inf += n; else art += n; }
     }
+  }
+  // food for a campaign: the strike force should carry a full load (10 turns) and the treasury should hold 3 more turns of its meals, more for a long road (1% lost per cell)
+  const CAMPAIGN_TURNS = 3;
+  function campaignFood(p, key) {
+    const s = G._strike && G._strike[key], R = G._rally && G._rally[key]; if (!s) return { need: 0, carried: 0, full: 0 };
+    let upk = 0, carried = 0, full = 0;
+    for (const x of G.L) if (s.has(x.id) && !x.dead) { const e = x.n * typ(x).eat; upk += e; carried += x.sup; full += Math.min(10, x.hoard) * e; }
+    const at = R && R.cell >= 0 ? R.cell : -1, mine = cities(p), d = at >= 0 && mine.length ? Math.min(...mine.map(c => hexDist(c, at))) : 0;
+    return { need: Math.round(upk * CAMPAIGN_TURNS * (1 + 0.01 * d)), carried, full };
   }
   // a battery's splash hits the ring round its target: enemies there count for the shot, our own men against it (0 for infantry)
   const splashScore = (L, t) => { let f = 0, e = 0; if (L.type === 1) for (const c of nbrs(t.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && U !== L) { if (U.owner === L.owner) f += U.n; else e += U.n; } } return e * 0.5 - f * 1.5; };
@@ -247,8 +257,11 @@
       // it goes when the infantry at the rally point comes to most of what is wanted and the batteries are there too (as many as there are, up to three)
       const strikers = G.L.filter(x => G._strike[key].has(x.id)); let there = 0, all = 0, gunsAll = 0, gunsThere = 0;
       for (const x of strikers) { const at = rc < 0 || hexDist(x.cell, rc) <= 5; if (x.type === 1) { gunsAll++; if (at) gunsThere++; continue; } all += x.n; if (at) there += x.n; }
-      if (rc < 0 || all === 0 || (there >= Math.min(all, want) * 0.7 && all >= Math.min(want, STRIKE_MEN) * 0.6 && gunsThere >= Math.min(gunsAll, STRIKE_ARTS)) ||
-          G.round - R.since > (act.by === 'you' ? 8 : 16)) R.go = true;
+      // and the food is in: the force carries most of a full load and the treasury holds the campaign's meals
+      const food = campaignFood(p, key), fed = food.carried >= food.full * 0.8 && G.players[p].stock >= food.need;
+      const ready = rc < 0 || all === 0 || (there >= Math.min(all, want) * 0.7 && all >= Math.min(want, STRIKE_MEN) * 0.6 && gunsThere >= Math.min(gunsAll, STRIKE_ARTS));
+      if (ready && !fed && act.by !== 'you' && G.round - R.since <= 24) { if (R.hoardNote !== G.round) { R.hoardNote = G.round; aiNote(p, tr('aiHoard', intentText(act), G.players[p].stock, food.need)); } }
+      else if (ready || G.round - R.since > (act.by === 'you' ? 8 : 24)) R.go = true;
     }
     // the siege: while our batteries can work on the garrison, the infantry waits out of the city's reach; it goes in once the garrison is weak, the guns are gone or the siege drags on
     const gar = G.lg[cell] && G.lg[cell].owner !== p ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[key].has(x.id) && x.type === 1);
