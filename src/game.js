@@ -358,14 +358,14 @@
 
   // ---------- orders ----------
   function planRoute(L, tgt) {
-    return findPath(G.link, L.cell, tgt, v => { const o = G.lg[v]; return o && o.owner !== L.owner ? Infinity : 1; });
+    return findPath(G.link, L.cell, tgt, v => { const o = G.lg[v]; return o && o.owner !== L.owner ? Infinity : o ? 1.5 : 1; });       // a friend's cell can be walked through but not stopped on: the road goes round friends when that is about as short
   }
   function validTarget(L, tgt) {
     if (tgt < 0 || tgt === L.cell || isBlockedCell(tgt)) return false;
     if (G.lg[tgt]) return false;       // a march cannot end on another legion: merging is only done with the split-and-merge order
     return !!planRoute(L, tgt);
   }
-  function routeTurns(L, tgt) { const r = planRoute(L, tgt); return r ? Math.max(1, Math.ceil(r.cost / typ(L).budget)) : -1; }
+  function routeTurns(L, tgt) { const r = planRoute(L, tgt); return r ? Math.max(1, Math.ceil(r.path.length / typ(L).budget)) : -1; }
   // command points: a base + for every city the nation owns, its defense ÷ a divisor (rounded down; both are on the params page). A legion's order costs 1;
   // receiving men in a merge and the new legion of a split cost nothing; cancelling an order gives the point back (it is counted from the legions, not stored)
   let _cpKey = '', _cpMax = [], _cpG = null;

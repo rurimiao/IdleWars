@@ -289,8 +289,10 @@
     return out;
   }
   // a march the computer gives only when the road is not a long way round (a pass held by the enemy can make the road to a cell next door fifty cells long)
+  // and the legion can actually get off its cell this turn
   function aiMarch(L, c) {
     const r = planRoute(L, c); if (!r || r.cost > hexDist(L.cell, c) * 2 + 4) return false;
+    if (r.path.slice(0, typ(L).budget).every(q => G.lg[q] && G.lg[q].owner === L.owner)) return false;       // friends fill every cell it could reach this turn: it would not move at all
     return orderMarch(L, c);
   }
   // walk to the nearest free cell at a distance from lo to hi of `c` (stays put when already there); true when an order was given or none is needed.
