@@ -712,7 +712,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 <div class="wrap">
   <header>
     <div class="hl">
-      <h1><span data-i="title"></span> <small class="ver">v414</small></h1>
+      <h1><span data-i="title"></span> <small class="ver">v415</small></h1>
       <div class="hint" id="hint"><img id="hintImg" alt="" hidden><span id="hintText"></span><span class="widewarn" data-i="wideWarn"></span></div>
     </div>
     <div class="hbtns"><div class="hgrp"><button class="hb hb-cam" id="camBtn"><i></i><span></span></button><span class="hround"><span data-i="turn"></span> <b id="roundNo">1</b></span><button class="hb hb-ff" id="ffBtn" data-i="ffBtn"></button><button class="hb hb-pause" id="pauseBtn"></button></div><div class="hgrp seg"><button class="hb hb-take" id="ctlBtn" data-i="takeOver"></button><button class="hb hb-auto" id="autoBtn" data-i="autoPlay"></button></div><button class="btn alt sm ib" id="bStats" data-it="statsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button><button class="btn alt sm ib" id="bSet" data-it="menuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button class="btn alt sm ib" id="bHelp" data-it="helpTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8"/><path d="M12 17.2h.01"/></svg></button></div>
@@ -971,7 +971,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
         '<b>固守</b>：不主动去打别人的城。',
         '>野战兵力退回城里修城防；谁打了它，它会就近还手。',
         '<b>新游戏面板</b>：每家一行选风格；下面的按钮能一次设成全部某一种，或给每家随机抽一种。',
-        '>地图：每家一块扇形，有“每家大区数”个大区，绕中心复制，各家一模一样；相邻两家之间是一道空洞墙，或两层中立大区；中间是公共区（人数÷2 个大区，奇数人数合成 1 个）。',
+        '>地图：每家一块扇形，有“每家大区数”个大区，绕中心复制，各家一模一样；相邻两家之间是一道空洞墙（墙图上各家和中间之间还隔着一层中立大区），或两层中立大区（6 家以上的较窄）；中间是公共区（人数÷2 个大区，奇数人数每家对着一个）。',
         '>“换一张”重新随机；“存下来”把这张存在浏览器里，以后点小图就能再用；“空洞”管小空洞多少。',
         '<b>两个多变开关</b>：每家单独开关，默认都开，名字后面会写出来，例如“稳健+动态多变+局势多变”。',
         '>动态多变：每 10 回合重抽一次风格。',
@@ -1770,7 +1770,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   }
   // ---------- symmetric worlds: one nation's wedge, copied around the centre ----------
   // Every nation gets a wedge: n home zones, then along each border with a neighbour either a hole wall or one layer of neutral zones (the neighbour has the other layer),
-  // and in the middle a common ground of P/2 zones (one zone facing every two nations; one big zone when P is odd), with big and small holes.
+  // and in the middle a common ground of P/2 zones (one zone facing every two nations; one per nation when P is odd), with big and small holes.
+  // On wall maps a layer of neutral zones lies between each nation's home ground and the common ground.
   // Even P mirror every other wedge (exact for 2, 4 and 6 nations on the hex grid), odd P turn it (exact for 3); 5, 7 and 8 come out nearly equal.
   const ZONE_CELLS = 25;
   function genSymWorld(P, n = 6, opt = {}) {       // opt.edge: 'wall' or 'band' (picked at random when absent); opt.holes: how many small holes (1 = normal)
@@ -1790,9 +1791,10 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       return { g, x: p[0], y: p[1] };
     };
     const rayD = (r, a) => (a < Math.PI / 2 ? r * Math.sin(a) : r);       // distance to a border half-line, a = angle from it
-    const W = 4.6, WALL = 1.6, Rc = Math.sqrt(P / 2 * AZ / 0.72 / Math.PI) + 0.8;
+    const W = P >= 7 ? 3 : P >= 6 ? 3.4 : 4.6, WALL = 1.6, Rc = Math.sqrt(P / 2 * AZ / 0.72 / Math.PI) + 0.8;       // with 6 to 8 nations the border layers are narrower, so there are not more neutral zones than home zones
+    const FRONT = Math.max(3, Math.sqrt(Rc * Rc + 2 * AZ / th) - Rc);       // wall maps: a layer of neutral ground (about one zone) between the home ground and the common ground
     // region of a nation-0 point: -1 hole, 0 home, 1/2 border layer at the first/second edge, 3 common ground
-    for (let attempt = 0; attempt < 200; attempt++) {
+    for (let attempt = 0; attempt < 400; attempt++) {
       const rimW = [1, 2, 3].map(m => ({ m, a: (Math.random() - 0.5) * 0.08 })), rimAt = a => 1 + rimW.reduce((s, w) => s + w.a * Math.cos(2 * Math.PI * w.m * a / th), 0);
       const blobs = [], lake = Rc * (0.25 + Math.random() * 0.2);
       const region = (x, y, Ro) => {
@@ -1801,7 +1803,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
         for (const [bx, by, br] of blobs) if (Math.hypot(x - bx, y - by) < br) return -1;
         if (r < Rc) return r < lake ? -1 : 3;
         const d0 = rayD(r, a), d1 = rayD(r, th - a);
-        if (edge === 'wall') return Math.min(d0, d1) < WALL ? -1 : 0;
+        if (edge === 'wall') return Math.min(d0, d1) < WALL ? -1 : r < Rc + FRONT ? 1 : 0;
         return d0 < W && d0 <= d1 ? 1 : d1 < W ? 2 : 0;
       };
       // the wedge radius that gives n home zones
@@ -1842,7 +1844,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       for (let i = 0; i < total; i++) {
         const k = reg[i]; if (k < 0) continue;
         isLand[i] = 1;
-        if (k === 3) { zone[i] = zid('c' + (even ? cg[i] >> 1 : 0), -1); continue; }
+        if (k === 3) { zone[i] = zid('c' + (even ? cg[i] >> 1 : cg[i]), -1); continue; }       // odd P: one piece of common ground per nation, not one big zone
         let bj = 0, bd = Infinity; sd[k].forEach((q, j) => { const d = Math.hypot(bx[i] - q[0], by[i] - q[1]); if (d < bd) { bd = d; bj = j; } });
         zone[i] = zid(k + ':' + cg[i] + ':' + bj, k === 0 ? cg[i] : -1);
       }
@@ -1877,7 +1879,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       sig.push({ home: hz.reduce((a, z) => a + z.cells.length, 0), ring: [...ring].reduce((a, o) => a + Z[o].cells.length, 0), rn: ring.size });
     }
     const span = k => Math.max(...sig.map(s => s[k])) / Math.max(1, Math.min(...sig.map(s => s[k])));
-    if (span('home') > 1.06) { why('fhome'); return false; }
+    const hs = sig.map(s => s.home);
+    if (span('home') > 1.06 && Math.max(...hs) - Math.min(...hs) > 5) { why('fhome'); return false; }       // within 6%, or within 5 cells (small homes)
     if (span('rn') > 1 || span('ring') > 1.1) { why('fring'); return false; }
     return true;
   }

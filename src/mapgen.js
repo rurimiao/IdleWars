@@ -49,7 +49,8 @@
   }
   // ---------- symmetric worlds: one nation's wedge, copied around the centre ----------
   // Every nation gets a wedge: n home zones, then along each border with a neighbour either a hole wall or one layer of neutral zones (the neighbour has the other layer),
-  // and in the middle a common ground of P/2 zones (one zone facing every two nations; one big zone when P is odd), with big and small holes.
+  // and in the middle a common ground of P/2 zones (one zone facing every two nations; one per nation when P is odd), with big and small holes.
+  // On wall maps a layer of neutral zones lies between each nation's home ground and the common ground.
   // Even P mirror every other wedge (exact for 2, 4 and 6 nations on the hex grid), odd P turn it (exact for 3); 5, 7 and 8 come out nearly equal.
   const ZONE_CELLS = 25;
   function genSymWorld(P, n = 6, opt = {}) {       // opt.edge: 'wall' or 'band' (picked at random when absent); opt.holes: how many small holes (1 = normal)
@@ -69,9 +70,10 @@
       return { g, x: p[0], y: p[1] };
     };
     const rayD = (r, a) => (a < Math.PI / 2 ? r * Math.sin(a) : r);       // distance to a border half-line, a = angle from it
-    const W = 4.6, WALL = 1.6, Rc = Math.sqrt(P / 2 * AZ / 0.72 / Math.PI) + 0.8;
+    const W = P >= 7 ? 3 : P >= 6 ? 3.4 : 4.6, WALL = 1.6, Rc = Math.sqrt(P / 2 * AZ / 0.72 / Math.PI) + 0.8;       // with 6 to 8 nations the border layers are narrower, so there are not more neutral zones than home zones
+    const FRONT = Math.max(3, Math.sqrt(Rc * Rc + 2 * AZ / th) - Rc);       // wall maps: a layer of neutral ground (about one zone) between the home ground and the common ground
     // region of a nation-0 point: -1 hole, 0 home, 1/2 border layer at the first/second edge, 3 common ground
-    for (let attempt = 0; attempt < 200; attempt++) {
+    for (let attempt = 0; attempt < 400; attempt++) {
       const rimW = [1, 2, 3].map(m => ({ m, a: (Math.random() - 0.5) * 0.08 })), rimAt = a => 1 + rimW.reduce((s, w) => s + w.a * Math.cos(2 * Math.PI * w.m * a / th), 0);
       const blobs = [], lake = Rc * (0.25 + Math.random() * 0.2);
       const region = (x, y, Ro) => {
@@ -80,7 +82,7 @@
         for (const [bx, by, br] of blobs) if (Math.hypot(x - bx, y - by) < br) return -1;
         if (r < Rc) return r < lake ? -1 : 3;
         const d0 = rayD(r, a), d1 = rayD(r, th - a);
-        if (edge === 'wall') return Math.min(d0, d1) < WALL ? -1 : 0;
+        if (edge === 'wall') return Math.min(d0, d1) < WALL ? -1 : r < Rc + FRONT ? 1 : 0;
         return d0 < W && d0 <= d1 ? 1 : d1 < W ? 2 : 0;
       };
       // the wedge radius that gives n home zones
@@ -121,7 +123,7 @@
       for (let i = 0; i < total; i++) {
         const k = reg[i]; if (k < 0) continue;
         isLand[i] = 1;
-        if (k === 3) { zone[i] = zid('c' + (even ? cg[i] >> 1 : 0), -1); continue; }
+        if (k === 3) { zone[i] = zid('c' + (even ? cg[i] >> 1 : cg[i]), -1); continue; }       // odd P: one piece of common ground per nation, not one big zone
         let bj = 0, bd = Infinity; sd[k].forEach((q, j) => { const d = Math.hypot(bx[i] - q[0], by[i] - q[1]); if (d < bd) { bd = d; bj = j; } });
         zone[i] = zid(k + ':' + cg[i] + ':' + bj, k === 0 ? cg[i] : -1);
       }
@@ -156,7 +158,8 @@
       sig.push({ home: hz.reduce((a, z) => a + z.cells.length, 0), ring: [...ring].reduce((a, o) => a + Z[o].cells.length, 0), rn: ring.size });
     }
     const span = k => Math.max(...sig.map(s => s[k])) / Math.max(1, Math.min(...sig.map(s => s[k])));
-    if (span('home') > 1.06) { why('fhome'); return false; }
+    const hs = sig.map(s => s.home);
+    if (span('home') > 1.06 && Math.max(...hs) - Math.min(...hs) > 5) { why('fhome'); return false; }       // within 6%, or within 5 cells (small homes)
     if (span('rn') > 1 || span('ring') > 1.1) { why('fring'); return false; }
     return true;
   }
