@@ -583,7 +583,15 @@
     const f = $('loadIn').files[0]; $('loadIn').value = ''; if (!f) return;
     try { const prev = G; unpackGame(JSON.parse(await f.text())); if (prev && prev.aiRunning) prev.aiRunning = false; closeModal(); autosave(); } catch (e) { console.error(e); $('saveNote').textContent = tr('loadBad'); }
   });
+  // the diplomacy button in the nations table: ask the other nation for an alliance (a computer answers at once), or break one
+  function dipClick(q) {
+    const me = G.cur; if (!humanTurn() || q === me || !G.players[q].alive) return;
+    if (allied(me, q)) { setAlly(me, q, false); G._dipMsg = tr('dipBroke', pname(q)); snd.select(); }
+    else { const why = askAlly(me, q); G._dipMsg = why ? tr('dipNo', pname(q), tr(why)) : tr('dipYes', pname(q)); snd.select(); }
+    ui(true); requestDraw(); autosave();
+  }
   const pickNation = e => {
+    const db = e.target.closest('button[data-dip]'); if (db) { if (!db.disabled && G) { dipClick(+db.dataset.dip); if (!$('modal').hidden) renderModal(); } return; }
     const cb = e.target.closest('button[data-ctl]'); if (cb) { if (!cb.disabled && G) { setControl(+cb.dataset.ctl, !G.players[+cb.dataset.ctl].human); if (!$('modal').hidden) renderModal(); } return; }
     if (e.target.id === 'natMore') { e.preventDefault(); openModal('nations'); return; }
     const r = e.target.closest('.r[data-p]'); if (!r || !G) return;
@@ -742,7 +750,7 @@
   new ResizeObserver(resize).observe($('boardWrap'));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => requestDraw());
   new MutationObserver(() => requestDraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.__game = { genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
+  window.__game = { setAlly, allied, hostile, canTake, askAlly, aiDiplo, leaderOf, targetsIn, dipClick, genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
     setLang: l => { lang = l; applyLang(); }, setSpeed: v => { S.speed = String(v); }, screen: i => { const r = cvEl.getBoundingClientRect(); return [r.left + view.cw / 2 + (G.X[i] - view.cx) * view.s, r.top + view.ch / 2 + (G.Y[i] - view.cy) * view.s]; } };
 
   applyParams(); writeForm(); resize(); applyLang();

@@ -684,7 +684,10 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 .btn.big { width: 100%; padding: 12px; font-size: 16px; font-weight: 800; }
 .mbody .form .wide { grid-column: 1 / -1; }
 .cp .r { grid-template-columns: 14px 1fr 70px 70px 70px; font-size: 14px; }
-.mbody .nat .r { grid-template-columns: 14px 1fr 50px 90px 80px 70px 70px 70px 78px; font-size: 14px; }
+.mbody .nat .r { grid-template-columns: 14px 1fr 50px 90px 80px 70px 70px 70px 78px 64px; font-size: 14px; }
+.nat .ally { margin-right: 4px; padding: 0 3px; border-radius: 4px; background: var(--good); color: #fff; font-size: 11px; } .nat .ally i { display: inline-block; width: 7px; height: 7px; margin-left: 2px; border-radius: 50%; border: 1px solid #fff; vertical-align: 0; }
+.nat .cb.dok { border-color: var(--good); color: var(--good); } .nat .cb.dbad { border-color: var(--bad); color: var(--bad); }
+.nat .dipnote { font-size: 13px; padding: 4px 6px; margin-bottom: 4px; border-radius: 6px; background: var(--panel-2); }
 .nat .sty { margin-left: 6px; color: var(--ink-2); font-size: 11px; }
 .nat .cb { font: inherit; font-size: 12px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--ink); cursor: pointer; }
 .nat .cb:disabled { opacity: 0.35; cursor: default; }
@@ -705,7 +708,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 <div class="wrap">
   <header>
     <div class="hl">
-      <h1><span data-i="title"></span> <small class="ver">v412</small></h1>
+      <h1><span data-i="title"></span> <small class="ver">v413</small></h1>
       <div class="hint" id="hint"><img id="hintImg" alt="" hidden><span id="hintText"></span><span class="widewarn" data-i="wideWarn"></span></div>
     </div>
     <div class="hbtns"><div class="hgrp"><button class="hb hb-cam" id="camBtn"><i></i><span></span></button><span class="hround"><span data-i="turn"></span> <b id="roundNo">1</b></span><button class="hb hb-ff" id="ffBtn" data-i="ffBtn"></button><button class="hb hb-pause" id="pauseBtn"></button></div><div class="hgrp seg"><button class="hb hb-take" id="ctlBtn" data-i="takeOver"></button><button class="hb hb-auto" id="autoBtn" data-i="autoPlay"></button></div><button class="btn alt sm ib" id="bStats" data-it="statsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button><button class="btn alt sm ib" id="bSet" data-it="menuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button class="btn alt sm ib" id="bHelp" data-it="helpTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8"/><path d="M12 17.2h.01"/></svg></button></div>
@@ -1043,6 +1046,9 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
         '>久攻不下（敌军远多于自己，或 8 回合没进展）就放弃，换一座。',
         '<b>守城</b>：哪座城附近敌军多过守军，就调近处闲着的兵团回去；自己被打残的城，也会派人回去修。',
         '>敌方炮兵在打自己的城时，派最近的两个闲着的步兵团贴到炮兵身边去打它（炮兵打不到紧挨着的格子）。',
+        '<b>联盟</b>：有一家比第二强的强三成以上（大城市每座算 200，加上兵力），其他电脑就两两结盟对付它；盟友变成最强的、结了深仇、或只剩两家时就解盟。',
+        '>你来求盟：只剩两家、恨你太深、你是最强的、或眼下没有谁强到要联手，它就拒绝。',
+        '>盟友的城（离自己的城 12 格内）被围时，闲着的兵团也会去帮着守，排在守自己的城后面。',
         '<b>兵团调度</b>：指挥点先给守城的，再给突击队，再给射程内有敌的，然后是修城的，最后其他。',
         '>太小的兵团（步兵不到 6 人、炮兵不到 5 人）会去并进旁边的同兵种兵团。',
         '>城边闲着的兵团会往外让 2–3 格，给新兵腾地方。',
@@ -1147,6 +1153,11 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       winTitle: n => `${n}获胜`, winSub: r => `在第${r}回合成为最后的赢家。`, allDead: '所有真人玩家都被消灭了', loseSub: r => `第${r}回合战败。`,
       tlTitle: n => `${n}以最多的大城市获胜`, tlSub: r => `打满${r}回合后结束：大城市最多者获胜。`, cpFirst: n => `已经大战${n}回合啦`, cpAgain: n => `又大战${n}回合啦`, cpEveryL: '回合提示间隔（回合）', cpSub: '继续打，还是现在结束？选结束，大城市最多的国家获胜。', rNoAp: '这个兵团本回合没有行动点了。', rNotAlert: '只有戒备的兵团能下攻击命令。', rNoTarget: '射程内没有敌军。', rHole: '这是空洞。', rSame: '就在这格。', rNoPath: '走不到：没有路。', rEnemyThere: '敌军占着。', rOtherType: '另一兵种的兵团占着。', rFull: '自己人占着，已经满员。', rNoUnit: '这格没有敌军。', rOwn: '这是你自己的兵团。', rFar: '超出射程。', rClose: '太近，贴身打不了。', turnsN: n => `${n}回合`, stopHere: '在此被拦下', menLost: n => `预计打掉${n}人`, cpCont: '继续', cpEnd: '结束对局', 
       logRound: n => `第 ${n} 回合开始`,
+      logAlly: (a, b) => `${pnameB(a)}和${pnameB(b)}结盟了。`, logUnally: (a, b) => `${pnameB(a)}解除了和${pnameB(b)}的联盟，下回合起才能开打。`,
+      rAlly: '这是盟友的兵团。', dnAllyB: '盟友之间不开火。要打先在“国家”里解盟，下回合起才能打。', rTruce: '刚解盟，还不能打。', dnTruceB: '解盟后要等到下一回合才能开打。',
+      colDip: '外交', dipAsk: '结盟', dipBreak: '解盟', dipTruce: '停战中', dipAllies: '盟', dipYes: q => `${q}同意结盟。`, dipNo: (q, w) => `${q}拒绝结盟：${w}。`, dipBroke: q => `已和${q}解盟，下回合起才能开打。`,
+      dipTwo: '只剩两家了', dipHate: '恨意太深', dipLead: '它太强了', dipNoFoe: '没有共同的敌人了', dipNoNeed: '现在没有谁强到要联手',
+      aiAlly: (q, l) => `和${q}结盟，一起对付${l}`, aiUnally: (q, w) => `和${q}解盟：${w}`,
       logNew: (P, u) => `新游戏：${P}个国家，${u}座大城市。`,
       logCity: (a, d, c) => `${pnameB(a)}从${pnameB(d)}手里夺下${c}。`, 
       logBuilt: (a, c) => `${pnameB(a)}修出了新的大城市${c}。`, logCityGone: a => `${pnameB(a)}的一座城或工地城防归零，没了。`, logCityDecay: a => `${pnameB(a)}养不起城：每座城掉了 10 点城防。`,
@@ -1176,6 +1187,11 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
         '>只看得见自己兵团和大城市周围 8 格内的敌军，看不到敌方补给线，也看不到别国的经济和统计。',
         '>空洞、区域和所有大城市一直可见。',
         '>电脑也受迷雾限制。',
+        '<b>联盟</b>（国家表左上角点“外交”或“全部”，打开整张表，最右一栏）：',
+        '>任意两国随时可以结盟或解盟。轮到你时点“结盟”，电脑当场答应或拒绝；点“解盟”立刻生效。',
+        '>盟友之间不开火，也不能夺对方的城；视野共享；兵团可以穿过盟友的格子，但不能停在上面。',
+        '>解盟后要到下一回合才能开打。',
+        '>只剩两家时联盟没有意义，电脑会解盟。',
         '<b>托管与扮演</b>：',
         '>托管：轮到你时点顶栏“托管”，电脑立刻代打这一回合，之后的回合也由它打。会先问你：保留命令（已下的照常执行，电脑只指挥没动的兵团）还是清空命令。',
         '>扮演：轮到电脑国时点顶栏“扮演”，这个国家就归你亲自指挥。托管后想拿回自己的国家，也是等轮到它时点“扮演”。',
@@ -1978,11 +1994,28 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   const wait = ms => (quick() ? (++yieldN % 6 === 0 ? sleep(0) : Promise.resolve()) : sleep(ms * parseFloat(S.speed) * G.speedMul));
   const quick = () => (G._ff === G.round) || !!G.ffUntil || parseFloat(S.speed) * G.speedMul < 0.1;       // the fast-forward button makes the rest of one round instant
   const cities = p => { const o = []; for (const i of G.land) if (G.def[i] >= CITY_MIN && G.co[i] === p) o.push(i); return o; };
-  // fog of war: p sees enemy legions within 8 cells of its own legions and big cities
+  // alliances: G.ally[a][b] is true while a and b are allies; after a break G.truce[a][b] holds that round, and they may fight only from the next round
+  const allied = (a, b) => a === b || (a >= 0 && b >= 0 && !!(G.ally && G.ally[a] && G.ally[a][b]));
+  const hostile = (a, b) => a !== b && a >= 0 && b >= 0 && !allied(a, b) && !(G.truce && G.truce[a] && G.truce[a][b] >= G.round);
+  const foeBits = p => { let m = 0; for (let q = 0; q < G.players.length; q++) if (hostile(p, q)) m |= 1 << q; return m; };
+  const foeArt = (cv, p, c) => { let n = 0; for (const [q, a] of cv.artOwn) if (hostile(p, q)) n += a[c]; return n; };
+  const canTake = (c, p) => G.co[c] !== p && (G.co[c] < 0 || hostile(p, G.co[c]));       // a neutral or hostile city can be taken, an ally's cannot
+  const allyOf = p => G.players.filter(q => q.id !== p && q.alive && allied(p, q.id)).map(q => q.id);
+  function setAlly(a, b, on) {
+    const n = G.players.length;
+    if (!G.ally) G.ally = G.players.map(() => new Array(n).fill(false));
+    if (!G.truce) G.truce = G.players.map(() => new Array(n).fill(0));
+    if (a === b || !!G.ally[a][b] === on) return false;
+    G.ally[a][b] = G.ally[b][a] = on;
+    if (!on) G.truce[a][b] = G.truce[b][a] = G.round;
+    logMsg(on ? 'logAlly' : 'logUnally', [a, b], -1);
+    touch(); return true;
+  }
+  // fog of war: p sees enemy legions within 8 cells of its own and its allies' legions and big cities
   function visMask(p) {
     const v = new Uint8Array(COLS * ROWS);
-    for (const L of G.L) if (L.owner === p) for (const c of within(L.cell, 8)) v[c] = 1;
-    for (const i of G.land) if (G.def[i] >= CITY_MIN && G.co[i] === p) for (const c of within(i, 8)) v[c] = 1;
+    for (const L of G.L) if (allied(L.owner, p)) for (const c of within(L.cell, 8)) v[c] = 1;
+    for (const i of G.land) if (G.def[i] >= CITY_MIN && allied(G.co[i], p)) for (const c of within(i, 8)) v[c] = 1;
     return v;
   }
   const alivePlayers = () => G.order.filter(p => G.players[p].alive);
@@ -2079,7 +2112,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   }
   function moveLegion(L, to) {
     const from = L.cell; G.lg[from] = null; G.lg[to] = L; L.cell = to; L.mv = { from, t0: performance.now() }; touch();
-    if (typ(L).take && isCity(to) && G.co[to] !== L.owner) capture(to, L.owner);
+    if (typ(L).take && isCity(to) && canTake(to, L.owner)) capture(to, L.owner);
   }
 
   // ---------- new game ----------
@@ -2213,19 +2246,19 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     }
     G.cv = { inf, infAll, artTot, artOwn }; G.cvVer = G.ver; return G.cv;
   }
-  // A cell is cut for p when an enemy legion stands on it, or enemy infantry reaches it and p's own infantry does not (a standoff lets supplies through).
-  function cutFor(p, c, cv) {
-    const m = cv.inf[c], own = 1 << p;
-    if ((m & ~own) !== 0 && (cv.infAll[c] & own) === 0) return true;
-    const L = G.lg[c]; return !!(L && L.owner !== p);
+  // A cell is cut for p when a hostile legion stands on it, or hostile infantry reaches it and p's own infantry does not (a standoff lets supplies through).
+  function cutFor(p, c, cv, foe) {
+    const m = cv.inf[c], own = 1 << p; if (foe == null) foe = foeBits(p);
+    if ((m & foe) !== 0 && (cv.infAll[c] & own) === 0) return true;
+    const L = G.lg[c]; return !!(L && hostile(L.owner, p));
   }
   function reachOf(p) {
     const r = G.reach[p]; if (r && r.ver === G.ver) return r;
-    const cv = cover(), n = COLS * ROWS, dist = new Int16Array(n).fill(-1), par = new Int32Array(n).fill(-1), q = [];
-    for (const i of G.land) if (G.def[i] >= CITY_MIN && G.co[i] === p && !cutFor(p, i, cv)) { dist[i] = 0; q.push(i); }
+    const cv = cover(), n = COLS * ROWS, dist = new Int16Array(n).fill(-1), par = new Int32Array(n).fill(-1), q = [], foe = foeBits(p);
+    for (const i of G.land) if (G.def[i] >= CITY_MIN && G.co[i] === p && !cutFor(p, i, cv, foe)) { dist[i] = 0; q.push(i); }
     for (let h = 0; h < q.length; h++) {
       const u = q[h];
-      for (let e = 0; e < 6; e++) { const v = G.link[u * 6 + e]; if (v < 0 || dist[v] >= 0 || cutFor(p, v, cv)) continue; dist[v] = dist[u] + 1; par[v] = u; q.push(v); }
+      for (let e = 0; e < 6; e++) { const v = G.link[u * 6 + e]; if (v < 0 || dist[v] >= 0 || cutFor(p, v, cv, foe)) continue; dist[v] = dist[u] + 1; par[v] = u; q.push(v); }
     }
     // a legion in a held cell is still supplied when the road reaches any free cell next to it
     for (const L of G.L) {
@@ -2239,7 +2272,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
 
   // ---------- orders ----------
   function planRoute(L, tgt) {
-    return findPath(G.link, L.cell, tgt, v => { const o = G.lg[v]; return o && o.owner !== L.owner ? Infinity : o ? 1.5 : 1; });       // a friend's cell can be walked through but not stopped on: the road goes round friends when that is about as short
+    return findPath(G.link, L.cell, tgt, v => { const o = G.lg[v]; return o && !allied(o.owner, L.owner) ? Infinity : o ? 1.5 : 1; });       // a friend's (or an ally's) cell can be walked through but not stopped on: the road goes round friends when that is about as short
   }
   function validTarget(L, tgt) {
     if (tgt < 0 || tgt === L.cell || isBlockedCell(tgt)) return false;
@@ -2292,7 +2325,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     logMsg('logAtkCell', [L.owner, { lg: L.id }, { zn: G.zone[cell] }], L.owner, true); touch(); return true;
   }
   function orderAttack(L, T, vc) {
-    if (!canAct(L) || L.st !== 'alert' || !T || T.dead || T.owner === L.owner || !inRange(L, T)) return false;
+    if (!canAct(L) || L.st !== 'alert' || !T || T.dead || !hostile(L.owner, T.owner) || !inRange(L, T)) return false;
     if (vc && L.type === 0) { const [lo, hi] = rangeOf(L); if (vc.length !== 3 || vc.some(c => hexDist(L.cell, c) < lo || hexDist(L.cell, c) > hi)) return false; }       // all three cells of the corner must be in range
     snap(L); L.atk = T.id; L.atkV = vc && vc.includes(T.cell) ? vc : null; L.acted = true; L.ordRound = G.round; logMsg('logAtkOrder', [L.owner, { lg: L.id }, T.owner, { lg: T.id }], L.owner, true); rec({ k: 'atk', id: L.id, p: L.owner, cell: L.cell, to: T.cell, tid: T.id }); touch(); return true;
   }
@@ -2321,7 +2354,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       L.undo = { split: { tid: N.id, amt, share, merge: false } };
       N.mv = { from: L.cell, t0: performance.now() };
       L.n -= amt; L.sup -= share;
-      if (T.take && isCity(cell) && G.co[cell] !== L.owner) { capture(cell, L.owner); L.undo = null; }       // a split that took a city cannot be taken back
+      if (T.take && isCity(cell) && canTake(cell, L.owner)) { capture(cell, L.owner); L.undo = null; }       // a split that took a city cannot be taken back
     }
     L.acted = true; L.splitRound = G.round; const sp = { k: 'split', id: L.id, p: L.owner, cell: L.cell, to: cell, amt: splitInfo.amt, tid: splitInfo.tid, merge: !!O };
     const sm = logMsg(sp.merge ? 'evMerge' : 'evSplit', [L.owner, { lg: L.id }, splitInfo.amt, { lg: splitInfo.tid }], L.owner, true);
@@ -2369,6 +2402,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     P.pending.splice(i, 1); P.stock += o.n * TYPES[o.type].cost; st(p)[4] -= o.n * TYPES[o.type].cost; touch(); return true;
   }
   function startTurn(p) {
+    G._dipMsg = '';
     for (const L of G.L) if (L.owner === p) { L.acted = false; L.undo = null; L.why = null; L.recvN = 0; L.cpFree = false; L.grp = 0; }
     const me = viewer(), S0 = G.sel;
     if (S0 >= 0 && !((G.lg[S0] && G.lg[S0].owner === me) || (G.def[S0] > 0 && G.co[S0] === me))) G.sel = -1;
@@ -2379,7 +2413,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   }
   function targetsIn(L) {
     const [lo, hi] = rangeOf(L), out = [];
-    for (const c of within(L.cell, hi)) { const T = G.lg[c]; if (T && T.owner !== L.owner && !T.dead && hexDist(L.cell, c) >= lo) out.push(T); }
+    for (const c of within(L.cell, hi)) { const T = G.lg[c]; if (T && hostile(L.owner, T.owner) && !T.dead && hexDist(L.cell, c) >= lo) out.push(T); }
     return out.sort((a, b) => hexDist(L.cell, a.cell) - hexDist(L.cell, b.cell) || b.n - a.n);
   }
   function rollHits(n, pct) { let h = 0; for (let k = 0; k < n; k++) if (Math.random() * 100 < pct) h++; return h; }
@@ -2394,13 +2428,13 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const T = typ(L), route = planRoute(L, L.tgt);
     if (!route) return { cancel: true };
     let budget = T.budget, last = -1, merge = -1, hit = false, blocked = false;
-    const path = route.path;
+    const path = route.path, foe = foeBits(L.owner);
     for (let k = 0; k < path.length && budget >= 1; k++) {
       budget--;
       const c = path[k], occ = G.lg[c];
-      if (occ && occ.owner === L.owner) { if (k === path.length - 1) blocked = true; }       // a friend on the last cell: the march ends before it
+      if (occ && allied(occ.owner, L.owner)) { if (k === path.length - 1) blocked = true; }       // a friend (or an ally) on the last cell: the march ends before it
       else last = k;
-      if ((cv.inf[c] & ~(1 << L.owner)) !== 0) { hit = true; break; }
+      if ((cv.inf[c] & foe) !== 0) { hit = true; break; }
       if (merge === k) break;
     }
     return { path, last, merge, hit, blocked, at: last };
@@ -2416,7 +2450,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     let moved = false;
     if (at >= 0) {
       moved = true;
-      if (T.take) for (let k = 0; k < at; k++) { const c = path[k]; if (isCity(c) && G.co[c] !== L.owner && !G.lg[c]) capture(c, L.owner); }
+      if (T.take) for (let k = 0; k < at; k++) { const c = path[k]; if (isCity(c) && canTake(c, L.owner) && !G.lg[c]) capture(c, L.owner); }
       if (merge >= 0) {
         const A = G.lg[path[at]], x = Math.min(L.n, T.cap - A.n), share = Math.floor(L.sup * x / L.n);
         A.n += x; A.sup += share; L.n -= x; L.sup -= share; capSup(A);
@@ -2532,12 +2566,12 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     rep.ms = stepMs ? ent.size * stepMs + stepMs : 0;
     if (stepMs) for (const [L, e] of ent) clrCam(L.cell, delay.get(L) || 0);
     for (const [L] of movers) G.lg[L.cell] = null;       // everybody leaves first, so that two legions can pass each other
-    const stand = (L, c) => { const from0 = from.get(L); G.lg[c] = L; L.cell = c; L.mv = { from: from0, t0: performance.now() + (delay.get(L) || 0) }; if (typ(L).take && isCity(c) && G.co[c] !== L.owner) capture(c, L.owner); };
+    const stand = (L, c) => { const from0 = from.get(L); G.lg[c] = L; L.cell = c; L.mv = { from: from0, t0: performance.now() + (delay.get(L) || 0) }; if (typ(L).take && isCity(c) && canTake(c, L.owner)) capture(c, L.owner); };
     for (const [L, e] of movers) {
       const c = e.P.path[e.at], A = G.lg[c];
       if (A && takesIn(L, A)) { merges.push([L, e, A]); continue; }
       if (A) { G.lg[L.cell] = L; e.at = -1; continue; }
-      if (typ(L).take) for (let k = 0; k < e.at; k++) { const q = e.P.path[k]; if (isCity(q) && G.co[q] !== L.owner && !G.lg[q]) capture(q, L.owner); }
+      if (typ(L).take) for (let k = 0; k < e.at; k++) { const q = e.P.path[k]; if (isCity(q) && canTake(q, L.owner) && !G.lg[q]) capture(q, L.owner); }
       stand(L, c);
     }
     for (const [L, e, A] of merges) {
@@ -2567,8 +2601,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   // who a fixed strike hits now (an empty list: it hits nothing)
   function strikeHits(k) {
     const L = k.s, cells = k.cells || [k.cell];
-    if (L.type === 1) return cells.map(c => G.lg[c]).filter(T => T && !T.dead && T !== L && (T.cell === k.cell ? (T.owner === L.owner || inRange(L, T)) : true));       // the splash round the centre does not need to be in range
-    const T = cells.map(c => G.lg[c]).filter(T => T && !T.dead && T.owner !== L.owner && inRange(L, T)).sort((a, b) => hexDist(L.cell, a.cell) - hexDist(L.cell, b.cell) || b.n - a.n)[0];
+    if (L.type === 1) return cells.map(c => G.lg[c]).filter(T => T && !T.dead && T !== L && (T.cell === k.cell ? (!hostile(L.owner, T.owner) || inRange(L, T)) : true));       // the splash round the centre does not need to be in range
+    const T = cells.map(c => G.lg[c]).filter(T => T && !T.dead && hostile(L.owner, T.owner) && inRange(L, T)).sort((a, b) => hexDist(L.cell, a.cell) - hexDist(L.cell, b.cell) || b.n - a.n)[0];
     return T ? [T] : [];
   }
   // before the shots land, the fixed strikes are shown one after the other: the area each unit aims at (a miss is marked); returns how long that takes
@@ -2585,7 +2619,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       const L = k.s; if (L.dead) continue;
       const tg = strikeHits(k);
       if (!tg.length) { rep.miss++; logMsg('logClrMiss', [L.owner, { lg: L.id }, { zn: G.zone[k.cell] }], L.owner, true); continue; }
-      for (const T of tg) evs.push({ s: L, t: T, auto: !k.active, half: L.type === 1 && T.cell !== k.cell, fr: T.owner === L.owner });       // splash round the centre does half damage
+      for (const T of tg) evs.push({ s: L, t: T, auto: !k.active, half: L.type === 1 && T.cell !== k.cell, fr: !hostile(L.owner, T.owner) });       // splash round the centre does half damage
     }
     rep.shots = evs.length;
     if (evs.length) await resolveFireSeq(evs, G.round, clrStep(evs.length));
@@ -2595,7 +2629,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   // a shot at a legion (turn-by-turn rules): a battery also hits the ring of six round its target, at half damage, friends included (as under the clearing rules)
   function shotsAt(L, T, extra) {
     const out = [{ s: L, t: T, ...extra }];
-    if (L.type === 1) for (const c of nbrs(T.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && !U.dead && U !== L) out.push({ s: L, t: U, ...extra, half: true, fr: U.owner === L.owner }); }
+    if (L.type === 1) for (const c of nbrs(T.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && !U.dead && U !== L) out.push({ s: L, t: U, ...extra, half: true, fr: !hostile(L.owner, U.owner) }); }
     return out;
   }
   // 2. at the end of the round every legion that can fire does so at once. A legion with an attack command shoots only its named target;
@@ -2656,19 +2690,19 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (wallD > 0) { razedPts = Math.min(G.def[c], wallD); G.def[c] -= razedPts; if (G.def[c] === 0) cityFalls(c); }
     let loss = Math.floor((d.D - (wallD > 0 ? Math.floor(baseWall * razedPts / wallD) : 0)) / typ(T).per);
     { const men = Math.min(T.n, loss); st(T.owner)[12 + T.type] += men;
-      for (const e of d.by) { const sh = d.D > 0 && e.s.owner !== T.owner ? e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / d.D : 0, a = st(e.s.owner); addHate(T.owner, e.s.owner, (men + razedPts * 0.3) * sh + 1); a[9 + T.type] += men * sh; a[11] += men * sh * TYPES[T.type].cost; a[18] += razedPts * sh; } }
+      for (const e of d.by) { const sh = d.D > 0 && hostile(e.s.owner, T.owner) ? e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / d.D : 0, a = st(e.s.owner); addHate(T.owner, e.s.owner, (men + razedPts * 0.3) * sh + 1); a[9 + T.type] += men * sh; a[11] += men * sh * TYPES[T.type].cost; a[18] += razedPts * sh; } }
     if (loss > 0 && T.n > 0) T.sup = Math.floor(T.sup * Math.max(0, T.n - loss) / T.n);       // the supplies carried shrink with the men: what the dead carried is lost
     T.n -= loss;
     const left = Math.max(0, T.n); let routed = false;
     if (T.n > 0 && T.n < typ(T).min) {       // too few men left to hold together: the legion routs, the rest of the men and its supplies are gone
       routed = true; const rem = T.n; st(T.owner)[12 + T.type] += rem;
-      for (const e of d.by) { const sh = d.D > 0 && e.s.owner !== T.owner ? e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / d.D : 0, a = st(e.s.owner); addHate(T.owner, e.s.owner, rem * sh); a[9 + T.type] += rem * sh; a[11] += rem * sh * TYPES[T.type].cost; }
+      for (const e of d.by) { const sh = d.D > 0 && hostile(e.s.owner, T.owner) ? e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / d.D : 0, a = st(e.s.owner); addHate(T.owner, e.s.owner, rem * sh); a[9 + T.type] += rem * sh; a[11] += rem * sh * TYPES[T.type].cost; }
       T.n = 0;
     }
     if (loss > 0) G.pops.push({ cell: c, txt: '−' + loss, t0: performance.now() });
           for (const e of d.by) logMsg('logFire', [e.s.owner, { lg: e.s.id }, T.owner, { lg: T.id }, e.hits, e.men, e.rate, Math.floor(e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / typ(T).per), { zn: G.zone[T.cell] }, e.fr ? 3 : e.half ? 2 : e.auto ? 1 : 0, tb, left], e.s.owner);
     if (T.n <= 0) {
-      const foes = d.by.filter(e => e.s.owner !== T.owner), top = (foes.length ? foes : d.by).reduce((m, e) => { const v = e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1); return v > m.v ? { v, e } : m; }, { v: -1, e: d.by[0] }).e, bump = (p, i) => { const a = st(p); a[i] = (a[i] || 0) + 1; };
+      const foes = d.by.filter(e => hostile(e.s.owner, T.owner)), top = (foes.length ? foes : d.by).reduce((m, e) => { const v = e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1); return v > m.v ? { v, e } : m; }, { v: -1, e: d.by[0] }).e, bump = (p, i) => { const a = st(p); a[i] = (a[i] || 0) + 1; };
       bump(top.s.owner, routed ? 21 : 20); bump(T.owner, routed ? 23 : 22);
       if (wasCity && S.breakBonus > 0) { G.players[top.s.owner].stock += S.breakBonus; st(top.s.owner)[0] += S.breakBonus; ecoEv(top.s.owner, 'brk', S.breakBonus, T.cell); logMsg('logBreak', [top.s.owner, { ct: T.cell }, S.breakBonus], top.s.owner); }       // the garrison of a city was wiped out or routed
       logMsg(routed ? 'logRout' : 'logDead', [T.owner, { lg: T.id }], T.owner);
@@ -2722,7 +2756,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   }
   function artLoss(p, from) {      // percentage points lost to enemy batteries covering the route
     const cv = cover(), r = reachOf(p), own = cv.artOwn.get(p); let loss = 0;
-    for (let c = from; c >= 0; c = r.par[c]) loss += cv.artTot[c] - (own ? own[c] : 0);
+    for (let c = from; c >= 0; c = r.par[c]) loss += foeArt(cv, p, c);
     return loss;
   }
   function economy(p) {
@@ -2762,7 +2796,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       if (G.def[c] >= CITY_MAX) { L.bld = false; ev('evMax', [p, { ct: c }, CITY_MAX], p); }
     }
     // send supplies: fighting legions first, then the ones closest to the enemy
-    const rr = reachOf(p), foes = G.L.filter(x => x.owner !== p), want = [];
+    const rr = reachOf(p), foes = G.L.filter(x => hostile(p, x.owner)), want = [];
     for (const L of G.L) { if (L.owner !== p || L.hoard <= 0) continue; const cut = rr.dist[L.cell] < 0; if (cut && !L.cut) ev('evCut', [p, { lg: L.id }], p); L.cut = cut; }
     for (const L of G.L) {
       if (L.owner !== p || L.hoard <= 0) continue;
@@ -2915,7 +2949,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (wrapped) {
       if (!(await roundEnd()) || G !== g) return;
       if (checkOver()) { G.busy = false; G._phase = null; ui(true); return; }
-      G.round++; G.clearing = !!S.clr; logMsg('logRound', [G.round], -1, true);
+      G.round++; G.clearing = !!S.clr; touch(); logMsg('logRound', [G.round], -1, true);
       if (G.ffUntil) {
         if (G.round >= G.ffUntil) { G.ffUntil = 0; for (const q of G.players) if (q.everHuman && q.alive) q.human = true; logMsg('logFfDone', [G.round], -1, true); }
         else G._ff = G.round;
@@ -3018,15 +3052,15 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     // an expedition: the main strike goes for a city far from our land (more than 10 cells from our nearest city); a city on the way, 6 cells or more short of it, shortens the supply road
     const go = G.aiGo && G.aiGo[p], T = go && go.k === 'city' ? go.obj : -1, dT = T >= 0 ? Math.min(...cts.map(q => hexDist(q, T))) : 0, far = !sty.hold && dT > 10;
     if (sites + plans.length >= (sty.hold ? 2 : 3) + (far ? 1 : 0)) return;
-    const sh = zoneShares(), cv = cover(), own = 1 << p;
+    const sh = zoneShares(), cv = cover(), foeM = foeBits(p);
     let best = -1, bsc = -1e9, fwd = false;
     for (const c of G.land) {
-      if (G.lg[c] || G.def[c] > 0 || isBlockedCell(c) || G.zone[c] < 0 || (cv.inf[c] & ~own)) continue;
+      if (G.lg[c] || G.def[c] > 0 || isBlockedCell(c) || G.zone[c] < 0 || (cv.inf[c] & foeM)) continue;
       let dOwn = 99; for (const q of cts) dOwn = Math.min(dOwn, hexDist(c, q));
       if (dOwn < 4 || dOwn > (sty.home || 16)) continue;
       let dFoe = 99; for (const F of foes) dFoe = Math.min(dFoe, hexDist(c, F.cell));
       if (dFoe < 4) continue;
-      let dCity = 99; for (const q of G.land) if (G.def[q] >= CITY_MIN && G.co[q] !== p) dCity = Math.min(dCity, hexDist(c, q));
+      let dCity = 99; for (const q of G.land) if (G.def[q] >= CITY_MIN && notAlly(p, G.co[q])) dCity = Math.min(dCity, hexDist(c, q));
       const z = G.Z[G.zone[c]], m = sh[G.zone[c]], tot = m ? [...m.values()].reduce((a, b) => a + b, 0) : 0, mine = m ? (m.get(p) || 0) : 0, gain = z.out * ((mine + 1) / (tot + 1) - (tot ? mine / tot : 0)), sc = gain * 0.7 + chokeAt(c) * 40 - dOwn * 8 - Math.min(dCity, 12) * 3 + (dFoe < 8 ? 15 : 0) + (far && hexDist(c, T) >= 6 && hexDist(c, T) < dT ? (dT - hexDist(c, T)) * 60 + dOwn * 8 : 0);
       if (sc > bsc) { bsc = sc; best = c; fwd = far && hexDist(c, T) >= 6 && hexDist(c, T) < dT - 2; }
     }
@@ -3038,7 +3072,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     bs[p].push({ lid: pick.id, cell: best });
     aiNote(p, fwd ? tr('aiForward', lname(pick), zoneName(G.zone[best]), cityName(T)) : tr('aiSite', lname(pick), zoneName(G.zone[best])), 'z:' + G.zone[best], true);
   }
-  const enemyInfNear = (p, c, r) => { let s = 0; for (const q of within(c, r)) { const F = G.lg[q]; if (F && F.owner !== p && F.type === 0) s += F.n; } return s; };
+  const enemyInfNear = (p, c, r) => { let s = 0; for (const q of within(c, r)) { const F = G.lg[q]; if (F && notAlly(p, F.owner) && F.type === 0) s += F.n; } return s; };
   function aiProduce(p, k, foes) {
     const P = G.players[p];
     const cts = cities(p).filter(i => citySupplied(p, i));
@@ -3070,7 +3104,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     return { need: Math.round(upk * CAMPAIGN_TURNS * (1 + 0.01 * d)), carried, full };
   }
   // a battery's splash hits the ring round its target: enemies there count for the shot, our own men against it (0 for infantry)
-  const splashScore = (L, t) => { let f = 0, e = 0; if (L.type === 1) for (const c of nbrs(t.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && U !== L) { if (U.owner === L.owner) f += U.n; else e += U.n; } } return e * 0.5 - f * 1.5; };
+  const splashScore = (L, t) => { let f = 0, e = 0; if (L.type === 1) for (const c of nbrs(t.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && U !== L) { if (!hostile(L.owner, U.owner)) f += U.n; else e += U.n; } } return e * 0.5 - f * 1.5; };
   function aiPickTarget(L, ts) {       // the garrison of the city under attack first, then batteries, then the biggest legion
     let best = null, bs = -1;
     const go = G.aiGo && G.aiGo[strikeKeyOf(L)];
@@ -3092,14 +3126,15 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   const intentCell = (p, it) => {       // the cell the strike force heads for, -1 when the intention is over
     const mine = x => x.owner === p;
     // a city stays the target while the enemy holds it; once its walls are down below a city, one of ours walks in and repairs it, and the first point repaired makes it ours
-    if (it.k === 'city') return G.co[it.t] >= 0 && G.co[it.t] !== p && G.def[it.t] > 0 ? it.t : -1;
+    if (it.k === 'city') return notAlly(p, G.co[it.t]) && G.def[it.t] > 0 ? it.t : -1;
     if (it.k === 'zone') {       // take the zone: enemy legions there are fought, empty ground is occupied, and once it is ours the force stays and defends it
       const z = G.Z[it.t]; if (!z || !z.cells.length) return -1;
-      let best = null; for (const L of G.L) if (!L.dead && !mine(L) && G.zone[L.cell] === it.t && (!best || L.n > best.n)) best = L;
+      let best = null; for (const L of G.L) if (!L.dead && notAlly(p, L.owner) && G.zone[L.cell] === it.t && (!best || L.n > best.n)) best = L;
       if (best) return best.cell;
-      for (const c of G.land) if (G.zone[c] === it.t && G.def[c] >= CITY_MIN && G.co[c] >= 0 && G.co[c] !== p) return c;
+      for (const c of G.land) if (G.zone[c] === it.t && G.def[c] >= CITY_MIN && notAlly(p, G.co[c])) return c;
       return z.ai;
     }
+    if (allied(p, it.t)) return -1;       // no revenge on an ally
     let bc = -1, bs = -1e18;       // nation: its most attractive city, else its nearest legion
     const mineF = G.L.filter(x => x.owner === p && x.type === 0 && !x.dead);
     const own = aiStyleOf(p).hold ? cities(p) : null, near = c => !own || own.some(q => hexDist(q, c) <= 10);       // the stay-home style strikes back only at cities close to its own land
@@ -3109,6 +3144,44 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     return bl ? bl.cell : -1;
   };
   const hateOf = (p, q) => (G.hate && G.hate[p] && G.hate[p][q]) || 0;
+  // ---------- alliances ----------
+  const notAlly = (p, q) => q >= 0 && !allied(p, q);       // someone to plan against: an enemy, or a nation just out of an alliance
+  const ALLY_LEAD = 1.3;       // a leader is a nation 30% stronger than the next one
+  const power = q => cities(q).length * 200 + G.L.reduce((a, L) => a + (L.owner === q && !L.dead ? L.n : 0), 0);
+  function leaderOf() {
+    const al = alivePlayers(); if (al.length < 3) return -1;
+    const ps = al.map(q => [q, power(q)]).sort((a, b) => b[1] - a[1]);
+    return ps[0][1] >= ps[1][1] * ALLY_LEAD ? ps[0][0] : -1;
+  }
+  // would computer nation p take q as an ally? the answer and its reason (a text key)
+  function aiWantsAlly(p, q) {
+    const al = alivePlayers(), lead = leaderOf();
+    if (al.length <= 2) return 'dipTwo';
+    if (hateOf(p, q) >= HATE_MIN) return 'dipHate';
+    if (lead === q) return 'dipLead';
+    if (!al.some(x => x !== p && x !== q && !allied(p, x) && !allied(q, x))) return 'dipNoFoe';
+    if (lead < 0 || lead === p) return 'dipNoNeed';
+    return null;
+  }
+  // a player asks computer nation q for an alliance: q answers at once
+  function askAlly(p, q) {
+    const why = G.players[q].human ? null : aiWantsAlly(q, p);
+    if (!why) setAlly(p, q, true);
+    return why;
+  }
+  // a computer nation at the start of its turn: it leaves an alliance that no longer helps it, and teams up with another computer nation against a leader
+  function aiDiplo(p) {
+    const al = alivePlayers(), lead = leaderOf();
+    for (const q of allyOf(p)) {
+      const why = al.length <= 2 ? 'dipTwo' : q === lead ? 'dipLead' : hateOf(p, q) >= HATE_MIN ? 'dipHate' : !al.some(x => x !== p && !allied(p, x)) ? 'dipNoFoe' : null;
+      if (why && setAlly(p, q, false)) aiNote(p, tr('aiUnally', pname(q), tr(why)));
+    }
+    if (lead < 0 || lead === p) return;
+    for (const q of al) {
+      if (q === p || q === lead || G.players[q].human || allied(p, q)) continue;
+      if (!aiWantsAlly(p, q) && !aiWantsAlly(q, p) && setAlly(p, q, true)) { aiNote(p, tr('aiAlly', pname(q), pname(lead))); return; }       // one new ally a turn
+    }
+  }
   const intentOver = (p, it) => {
     if (G.round > it.until) return 'aiIntentTimeout';
     if (it.k === 'nation') { if (!G.players[it.t].alive) return 'aiIntentDone'; if (it.by === 'ai' && hateOf(p, it.t) < 30 && G.round - it.r0 > 4) return 'aiIntentCalm'; }
@@ -3146,13 +3219,13 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (field.length && force >= needHate * 0.6) {
       // revenge ideas follow the hatred: one per nation that has hurt us enough, getting stronger as the hatred grows
       for (let q = 0; q < G.players.length; q++) {
-        const h = hateOf(p, q); if (q === p || !G.players[q].alive) continue;
+        const h = hateOf(p, q); if (q === p || !G.players[q].alive || allied(p, q)) continue;
         const ex = I.find(x => x.k === 'nation' && x.t === q);
         if (ex) { ex.str = intentStr(p, ex); if (h >= ex.last + 60) { ex.last = h; ex.until = Math.min(G.round + INTENT_LIFE, ex.until + 10); intentNote(ex, tr('itHistHate', Math.round(h))); } }
         else if (h >= HATE_MIN && I.filter(x => x.by === 'ai').length < MAX_AI_INTENTS) { addIntent(p, 'nation', q, 'ai', tr('itHistFormHate', Math.round(h))); aiNote(p, tr('aiRevenge', pname(q), Math.round(h))); }
       }
       if (!sty.hold && I.filter(x => x.k === 'city').length < (force >= STRIKE_MEN * 2 ? 2 : 1) && force >= need && I.filter(x => x.by === 'ai').length < MAX_AI_INTENTS) {       // a second city when the army can carry two strikes
-        const cs = G.land.filter(i => wreckOrCity(i) && G.co[i] !== p && G.co[i] >= 0 && !I.some(x => x.k === 'city' && x.t === i));
+        const cs = G.land.filter(i => wreckOrCity(i) && notAlly(p, G.co[i]) && !I.some(x => x.k === 'city' && x.t === i));
         // a city close to our own land, weakly held: the distance counts a lot and the defenders around it (not only the garrison) are weighed in
         const mine = cities(p), local = i => { let n = 0; for (const F of foes) if (hexDist(F.cell, i) <= 4) n += F.type === 0 ? F.n : F.n * 1.5; return n; };
         let best = -1, bd = -1e18; for (const i of cs) { const dOwn = mine.length ? Math.min(...mine.map(q => hexDist(q, i))) : 99; const sc = cityPrize(i) - dOwn * 40 - local(i) * 6 - G.def[i] * 0.4; if (sc > bd) { bd = sc; best = i; } }
@@ -3176,8 +3249,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   function aiProng(p, key, act, cell, field, need, foes, prev) {
     const prevStrike = prev.set, prevFor = prev.id;
     G.aiGo[key] = { obj: cell, k: act.k, id: act.id };
-    const peaceful = act.k === 'zone' && !(G.lg[cell] && G.lg[cell].owner !== p) && !(G.def[cell] >= CITY_MIN && G.co[cell] >= 0 && G.co[cell] !== p);       // nobody to fight in the zone: a few legions are enough
-    let near = 0; for (const F of foes) if (F.owner !== p && hexDist(F.cell, cell) <= 4) near += F.type === 0 ? F.n : F.n * 1.5;
+    const peaceful = act.k === 'zone' && !(G.lg[cell] && notAlly(p, G.lg[cell].owner)) && !(G.def[cell] >= CITY_MIN && notAlly(p, G.co[cell]));       // nobody to fight in the zone: a few legions are enough
+    let near = 0; for (const F of foes) if (hexDist(F.cell, cell) <= 4) near += F.type === 0 ? F.n : F.n * 1.5;
     const want = peaceful ? 30 : act.by === 'you' ? 1e9 : Math.max(need, (near + 20) * 1.8, act.k === 'city' ? STRIKE_MEN : 0);       // about twice what holds the ground round the target, and for a city at least six full legions (what took a starting city in tests/siege_bench.js)
     // the strike force keeps its members from one turn to the next (so legions do not keep joining and leaving); the nearest field infantry fills it up to what is wanted
     const keep = act.id === prevFor ? field.filter(x => prevStrike.has(x.id)) : [];
@@ -3188,7 +3261,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       act.hard = near > sum * 1.2 ? (act.hard || 0) + 1 : 0;
       // a strike that gets no closer for 8 turns once it is storming (enemy legions on the way stop every march) is given up the same way
       const inf = G.L.filter(x => G._strike[key].has(x.id) && x.type === 0), dAvg = inf.length ? inf.reduce((a, x) => a + hexDist(x.cell, cell), 0) / inf.length : 99;
-      if (act.dBest == null || dAvg < act.dBest - 1 || G.lg[cell] && G.lg[cell].owner !== p && G.lg[cell].n < (act.garLow ?? 1e9)) { act.dBest = Math.min(act.dBest ?? 99, dAvg); act.garLow = G.lg[cell] ? G.lg[cell].n : 0; act.stuckFrom = G.round; }
+      if (act.dBest == null || dAvg < act.dBest - 1 || G.lg[cell] && notAlly(p, G.lg[cell].owner) && G.lg[cell].n < (act.garLow ?? 1e9)) { act.dBest = Math.min(act.dBest ?? 99, dAvg); act.garLow = G.lg[cell] ? G.lg[cell].n : 0; act.stuckFrom = G.round; }
       if (!act.storm) act.stuckFrom = G.round; else if (G.round - act.stuckFrom >= 8) act.hard = 6;
       if (act.hard >= 6) { aiNote(p, tr('aiIntentHard', intentText(act))); endIntent(p, act, 'aiIntentHard'); G.aiGo[key] = null; G._strike[key] = new Set(); return; }
     }
@@ -3203,7 +3276,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const rr = reachOf(p), cv = cover(), own = 1 << p;
     if (peaceful) R.go = true;
     if (!R.go) {
-      let rc = -1, rb = 1e9; for (const c of within(cell, 10)) { if (isBlockedCell(c) || G.lg[c] || rr.dist[c] < 0 || (cv.inf[c] & ~own) || hexDist(c, cell) < 4) continue; const d = hexDist(c, cell); if (d < rb) { rb = d; rc = c; } }
+      let rc = -1, rb = 1e9; for (const c of within(cell, 10)) { if (isBlockedCell(c) || G.lg[c] || rr.dist[c] < 0 || (cv.inf[c] & foeBits(p)) || hexDist(c, cell) < 4) continue; const d = hexDist(c, cell); if (d < rb) { rb = d; rc = c; } }
       R.cell = rc;
       // it goes when the infantry at the rally point comes to most of what is wanted and the batteries are there too (as many as there are, up to three)
       const strikers = G.L.filter(x => G._strike[key].has(x.id)); let there = 0, all = 0, gunsAll = 0, gunsThere = 0;
@@ -3215,7 +3288,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       else if (ready || G.round - R.since > (act.by === 'you' ? 8 : 24)) R.go = true;
     }
     // the siege: while our batteries can work on the garrison, the infantry waits out of the city's reach; it goes in once the garrison is weak, the guns are gone or the siege drags on
-    const gar = G.lg[cell] && G.lg[cell].owner !== p ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[key].has(x.id) && x.type === 1);
+    const gar = G.lg[cell] && notAlly(p, G.lg[cell].owner) ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[key].has(x.id) && x.type === 1);
     if (R.go && R.siege == null) R.siege = G.round;
     G.aiGo[key].assault = peaceful || !gar || gar.n <= TYPES[gar.type].min * 2 || !guns.length || (R.siege != null && G.round - R.siege > 12);
     act.storm = G.aiGo[key].assault;
@@ -3234,7 +3307,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   function aiRoutes(p, seen) {
     const w = new Map(), who = new Map();
     for (const F of G.L) {
-      if (F.owner === p || F.dead || !seen(F.cell)) continue;
+      if (!notAlly(p, F.owner) || F.dead || !seen(F.cell)) continue;
       const rr = reachOf(F.owner); if (rr.dist[F.cell] <= 0) continue;
       for (let c = F.cell; c >= 0; c = rr.par[c]) { w.set(c, (w.get(c) || 0) + 1); let m = who.get(c); if (!m) who.set(c, m = new Map()); m.set(F.owner, (m.get(F.owner) || 0) + 1); }
     }
@@ -3263,14 +3336,17 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   // cities in danger: enemy men within 5 cells outweigh our men within 2; the nearest idle legions (not the strike force) are sent there, the emptiest city first
   function aiDefend(p, foes) {
     const out = new Map(), used = new Set(), strike = allStrike(p), w = L => (L.type === 0 ? L.n : L.n * 1.5), danger = [];
-    for (const c of cities(p)) {
-      let threat = 0; for (const F of foes) if (hexDist(F.cell, c) <= 5) threat += w(F);
+    // an ally's city close to our land (within 12 cells of one of ours) is helped like our own, after our own
+    const mineC = cities(p), helpC = [];
+    for (const q of allyOf(p)) for (const c of cities(q)) if (mineC.some(m => hexDist(m, c) <= 12)) helpC.push(c);
+    for (const c of [...mineC, ...helpC]) {
+      let threat = 0; for (const F of foes) if (hexDist(F.cell, c) <= 5 && hostile(G.co[c], F.owner)) threat += w(F);
       if (!threat) continue;
-      let guard = 0; for (const q of within(c, 2)) { const O = G.lg[q]; if (O && O.owner === p) guard += w(O); }
-      if (threat > guard * 0.8) danger.push({ c, need: threat - guard * 0.8, empty: !G.lg[c] });
+      let guard = 0; for (const q of within(c, 2)) { const O = G.lg[q]; if (O && allied(O.owner, G.co[c])) guard += w(O); }
+      if (threat > guard * 0.8) danger.push({ c, need: threat - guard * 0.8, empty: !G.lg[c], ally: G.co[c] !== p });
     }
     for (const c of G.land) if (G.co[c] === p && G.wasCity[c] && G.def[c] > 0 && G.def[c] < CITY_MIN && !G.lg[c]) danger.push({ c, need: 1, empty: true });       // a wrecked city of ours: someone walks in and repairs it
-    danger.sort((a, b) => (b.empty - a.empty) || (b.need - a.need));
+    danger.sort((a, b) => (!!a.ally - !!b.ally) || (b.empty - a.empty) || (b.need - a.need));
     const idle = G.L.filter(x => x.owner === p && !x.dead && x.st === 'alert' && !x.acted && !x.bld && !isCity(x.cell) && !strike.has(x.id) && x.n >= TYPES[x.type].min);
     // batteries shelling one of our cities: up to two of the nearest idle infantry legions go for each (standing right next to a battery is inside its blind spot)
     const sortie = new Map(), own = cities(p);
@@ -3289,7 +3365,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   // and the legion can actually get off its cell this turn
   function aiMarch(L, c) {
     const r = planRoute(L, c); if (!r || r.cost > hexDist(L.cell, c) * 2 + 4) return false;
-    if (r.path.slice(0, typ(L).budget).every(q => G.lg[q] && G.lg[q].owner === L.owner)) return false;       // friends fill every cell it could reach this turn: it would not move at all
+    if (r.path.slice(0, typ(L).budget).every(q => G.lg[q] && allied(G.lg[q].owner, L.owner))) return false;       // friends fill every cell it could reach this turn: it would not move at all
     return orderMarch(L, c);
   }
   // walk to the nearest free cell at a distance from lo to hi of `c` (stays put when already there); true when an order was given or none is needed.
@@ -3335,12 +3411,12 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (L.st === 'march' && L.tgt != null && !(inStrike && hexDist(L.tgt, go.obj) > (L.type === 0 ? (go.assault ? 1 : 5) : T.rmax + 1))) return;
     const onCity = isCity(L.cell);
     const ts = targetsIn(L).filter(t => seen(t.cell));
-    const R = G._rally && G._rally[key], cv = cover(), own = 1 << p;
-    const inFoeReach = q => !!(cv.inf[q] & ~own);
+    const R = G._rally && G._rally[key], cv = cover(), foeM = foeBits(p);
+    const inFoeReach = q => !!(cv.inf[q] & foeM);
     // standing on a city knocked below the threshold (an enemy's, or one of our own): whoever repairs a site owns it, so rebuild it into our own city
     if (!onCity && G.def[L.cell] > 0) {
       if (L.bld) return;       // keeps repairing (and, being on alert, still fires at round end)
-      if (G.co[L.cell] >= 0 && (G.co[L.cell] !== p || G.wasCity[L.cell])) { if (L.sup >= BUILD_COST * 10 && canRepair(L)) orderRepair(L); return; }       // without supplies it stays put and waits for them
+      if (G.co[L.cell] >= 0 && (G.co[L.cell] === p ? G.wasCity[L.cell] : notAlly(p, G.co[L.cell]))) { if (L.sup >= BUILD_COST * 10 && canRepair(L)) orderRepair(L); return; }       // without supplies it stays put and waits for them
     }
     // sent out against a battery that shells one of our cities: next to it, then fire
     const so = G._sortie && G._sortie[p] && G._sortie[p].get(L.id);
@@ -3446,8 +3522,9 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     stepsBegin();
     const k = AIK[(G.aiLevel && G.aiLevel[p]) || 'normal'] || AIK.normal;
     const fogV = S.fog ? visMask(p) : null, seen = c => !fogV || !!fogV[c];
-    const foes = G.L.filter(x => x.owner !== p && seen(x.cell));
+    const foes = G.L.filter(x => hostile(p, x.owner) && seen(x.cell));
     aiShift(p);
+    aiDiplo(p);
     aiProduce(p, k, foes);
     if (!(await flush())) { stepsEnd(); return false; }
     aiThink(p, k, aiStyleOf(p), foes);
@@ -3651,7 +3728,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (i < 0 || G.zone[i] < 0) return [tr('rHole'), tr('dnHoleB')];
     if (i === L.cell) return [tr('rSame'), tr('dnSameB')];
     if (isBlockedCell(i)) return [tr('dnBlocked'), tr('dnBlockedB')];
-    if (O && O.owner !== L.owner) return [tr('rEnemyThere'), tr('dnEnemyB')];
+    if (O && !allied(O.owner, L.owner)) return [tr('rEnemyThere'), tr('dnEnemyB')];
     if (O) return [tr('rFriendThere'), tr('dnFriendB')];
     return [tr('rNoPath'), tr('dnNoPathB')];
   }
@@ -3665,6 +3742,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (G.clearing && L.type === 0) return [tr('dnCorner'), tr('dnCornerB')];
     if (!T) return [tr('rNoUnit'), tr('dnNoUnitB')];
     if (T.owner === L.owner) return [tr('rOwn'), tr('dnOwnB')];
+    if (allied(T.owner, L.owner)) return [tr('rAlly'), tr('dnAllyB')];
+    if (!hostile(T.owner, L.owner)) return [tr('rTruce'), tr('dnTruceB')];
     return [tr('xBadAttack'), ''];
   }
   function whySplit(L, amt, i) {
@@ -3900,14 +3979,14 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       const O = h >= 0 ? G.lg[h] : null;
       if (h < 0 || G.zone[h] < 0) r = { no: 'rHole' };
       else if (h === L.cell) r = { no: 'rSame' };
-      else if (O && O.owner !== L.owner) r = { no: 'rEnemyThere' };
+      else if (O && !allied(O.owner, L.owner)) r = { no: 'rEnemyThere' };
       else if (O) r = { no: 'rFriendThere' };
       else {
         const rt = planRoute(L, h);
         if (!rt) r = { no: 'rNoPath' };
         else {
           const path = [L.cell, ...rt.path], cv = cover(); let stop = -1;
-          for (let k = 1; k < path.length; k++) if ((cv.inf[path[k]] & ~(1 << L.owner)) !== 0) { stop = k; break; }
+          const foe = foeBits(L.owner); for (let k = 1; k < path.length; k++) if ((cv.inf[path[k]] & foe) !== 0) { stop = k; break; }
           r = { ok: true, path: stop >= 0 ? path.slice(0, stop + 1) : path, full: path, stop: stop >= 0 ? path[stop] : -1, turns: routeTurns(L, h) };
         }
       }
@@ -3923,6 +4002,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       const T = h >= 0 ? lgAt(h) : null;
       if (!T) r = { no: 'rNoUnit' };
       else if (T.owner === L.owner) r = { no: 'rOwn' };
+      else if (allied(T.owner, L.owner)) r = { no: 'rAlly' };
+      else if (!hostile(T.owner, L.owner)) r = { no: 'rTruce' };
       else {
         const d = hexDist(L.cell, T.cell), [lo, hi] = rangeOf(L);
         if (d < lo) r = { no: 'rClose' }; else if (d > hi) r = { no: 'rFar' }; else r = { ok: true, T, men: odds(L, T).men };
@@ -4026,12 +4107,22 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const rows = [...G.order].map(id => ({ id, n: st[id].n, s: st[id], a: G.players[id].alive, u: upk(id) }));
     rows.sort((a, b) => (b.a - a.a) || (b.n - a.n) || (b.s.men - a.s.men));
     const shown = limit ? rows.slice(0, limit) : rows, q = i => (hide(i) ? '?' : '');
+    // alliances: a tag after the name (the full list in the wide table), and in the wide table a button for the player whose turn it is
+    const me = viewer(), can = humanTurn() && G.cur === me;
+    const tag = id => { const a = allyOf(id); if (!a.length) return ''; return wide ? `<small class="ally" title="${tr('dipAllies')}：${a.map(pname).join('、')}">${tr('dipAllies')}${a.map(q => `<i style="background:${hue(q)}"></i>`).join('')}</small>` : (id !== me && allied(me, id) ? `<small class="ally">${tr('dipAllies')}</small>` : ''); };       // before the name, so a long name does not hide it
+    const dip = id => {
+      if (id === me || !G.players[id].alive || !G.players[me].alive || G.over) return '<b></b>';
+      if (allied(me, id)) return `<button class="cb dbad" data-dip="${id}" ${can ? '' : 'disabled'}>${tr('dipBreak')}</button>`;
+      if (!hostile(me, id)) return `<button class="cb" disabled>${tr('dipTruce')}</button>`;
+      return `<button class="cb dok" data-dip="${id}" ${can ? '' : 'disabled'}>${tr('dipAsk')}</button>`;
+    };
     // legions come in two kinds, each shown as "legions/men"
-    let h = `<div class="r hd"><i style="visibility:hidden"></i><span></span><em>${tr('colCity')}</em><em>${tr('colInf')}</em><em>${tr('colArt')}</em><em>${tr('stock')}</em><em>${tr('income')}</em><em>${tr('upkeep')}</em>` + (wide ? '<em></em>' : '') + `</div>`;
-    h += shown.map(r => `<div class="r ${r.id === G.cur ? 'cur' : ''} ${r.a ? '' : 'out'} ${r.id === G.blink ? 'blk' : ''}" data-p="${r.id}"><i style="background:${hue(r.id)}"></i><span>${pname(r.id)}${wide && !G.players[r.id].human && G.aiStyle ? `<small class="sty">${tr('st_' + (G.aiStyle[r.id] || 'balanced'))}</small>` : ''}</span><b>${r.n}</b>`
+    let h = `<div class="r hd"><i style="visibility:hidden"></i><span></span><em>${tr('colCity')}</em><em>${tr('colInf')}</em><em>${tr('colArt')}</em><em>${tr('stock')}</em><em>${tr('income')}</em><em>${tr('upkeep')}</em>` + (wide ? `<em></em><em>${tr('colDip')}</em>` : '') + `</div>`;
+    if (wide && G._dipMsg) h = `<div class="dipnote">${G._dipMsg}</div>` + h;
+    h += shown.map(r => `<div class="r ${r.id === G.cur ? 'cur' : ''} ${r.a ? '' : 'out'} ${r.id === G.blink ? 'blk' : ''}" data-p="${r.id}"><i style="background:${hue(r.id)}"></i><span>${tag(r.id)}${pname(r.id)}${wide && !G.players[r.id].human && G.aiStyle ? `<small class="sty">${tr('st_' + (G.aiStyle[r.id] || 'balanced'))}</small>` : ''}</span><b>${r.n}</b>`
       + `<b>${q(r.id) || `${r.s.infN}/${r.s.infM}`}</b><b>${q(r.id) || `${r.s.artN}/${r.s.artM}`}</b><b>${q(r.id) || G.players[r.id].stock}</b><b>${q(r.id) || '+' + G.players[r.id].income}</b><b>${q(r.id) || '−' + r.u}</b>`
-      + (wide ? `<button class="cb" data-ctl="${r.id}" ${r.a && !G.over ? '' : 'disabled'}>${G.players[r.id].human ? tr('autoPlay') : tr('takeOver')}</button>` : '') + `</div>`).join('');
-    if (limit && rows.length > limit) h = h.replace(`<span></span>`, `<span><a href="#" id="natMore">${tr('allShort')} +${rows.length - limit}</a></span>`);
+      + (wide ? `<button class="cb" data-ctl="${r.id}" ${r.a && !G.over ? '' : 'disabled'}>${G.players[r.id].human ? tr('autoPlay') : tr('takeOver')}</button>` + dip(r.id) : '') + `</div>`).join('');
+    if (limit) h = h.replace(`<span></span>`, `<span><a href="#" id="natMore">${rows.length > limit ? `${tr('allShort')} +${rows.length - limit}` : tr('colDip')}</a></span>`);       // the link opens the full table, with the diplomacy buttons
     return h;
   }
   // the two rule switches under the camera buttons: fog of war, and who acts when (in turn, or cleared together at the end of the round)
@@ -4145,13 +4236,13 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const key = G.ver + ':' + L.id; if (G._cr && G._cr.key === key) return G._cr.t;
     const p = L.owner, cv = cover(), cts = cities(p), fv = fogVis(); let t = tr('cutWhyNone'), best = -1, bd = 1e9;
     for (const c of cts) { const d = hexDist(L.cell, c); if (d < bd) { bd = d; best = c; } }
-    const r = best >= 0 ? findPath(G.link, L.cell, best, v => { const o = G.lg[v]; return o && o.owner !== p ? 3 : 1; }) : null;
+    const r = best >= 0 ? findPath(G.link, L.cell, best, v => { const o = G.lg[v]; return o && hostile(o.owner, p) ? 3 : 1; }) : null;
     if (r && r.path) {
       for (const c of r.path) {
         if (!cutFor(p, c, cv)) continue;
         const O = G.lg[c], list = [];
-        if (O && O.owner !== p) list.push(O);
-        for (const F of G.L) { if (F.dead || F.owner === p || F.type !== 0 || F.st === 'march' || list.includes(F)) continue; const [lo, hi] = rangeOf(F), d = hexDist(F.cell, c); if (d >= lo && d <= hi) list.push(F); }
+        if (O && hostile(O.owner, p)) list.push(O);
+        for (const F of G.L) { if (F.dead || !hostile(F.owner, p) || F.type !== 0 || F.st === 'march' || list.includes(F)) continue; const [lo, hi] = rangeOf(F), d = hexDist(F.cell, c); if (d >= lo && d <= hi) list.push(F); }
         const vis = list.filter(F => !fv || fv[F.cell]).sort((a, b) => hexDist(a.cell, c) - hexDist(b.cell, c)).slice(0, 2);
         const names = vis.map(F => `${pnameB(F.owner)}的${lname(F)}`).join('、');
         if (c === L.cell) t = vis.length ? tr('cutWhyHere', names, L.st === 'march' ? tr('cutMarching') : '') : tr('cutWhyHidden', zoneName(G.zone[c]));       // its own cell is in the enemy's range and none of our infantry covers it
@@ -4171,7 +4262,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (d === 0) return { d, src, home: true, total: 0 };
     const extra = Math.max(0, Math.ceil(d / 6) - 1), far = d, per = new Map();
     for (const F of G.L) {
-      if (F.dead || F.owner === p || F.type !== 1 || F.st === 'march') continue;
+      if (F.dead || !hostile(F.owner, p) || F.type !== 1 || F.st === 'march') continue;
       const T = typ(F), R = T.rmax + (isCity(F.cell) ? T.cb : 0); let s = 0;
       for (const c of route) { const dd = hexDist(F.cell, c); if (dd >= T.rmin && dd <= R) s += F.n; }
       if (s > 0) per.set(F, s);
@@ -4242,7 +4333,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
         const slow = Math.ceil(d / 6) - 1 > 0;
         for (let c = L.cell; rr.par[c] >= 0; c = rr.par[c]) {
           const n = rr.par[c], key = c * 65536 + n; if (seen.has(key)) continue; seen.add(key);
-          const hot = cv.artTot[c] - (own ? own[c] : 0) > 0 || cv.artTot[n] - (own ? own[n] : 0) > 0;
+          const hot = foeArt(cv, P.id, c) > 0 || foeArt(cv, P.id, n) > 0;
           // supplies travel from the city (n) to the legion (c)
           (hot ? out.hot : slow ? dashed : solid).push([G.X[n], G.Y[n], G.X[c], G.Y[c]]);
         }
@@ -4298,15 +4389,15 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   function reachCells(L) {
     const key = G.ver + ':' + L.id + ':' + L.cell;
     if (G._rcz && G._rcz.key === key) return G._rcz.path;
-    const cv = cover(), T = typ(L), seen = new Map([[L.cell, 0]]), q = [L.cell], path = new Path2D(), set = new Set([L.cell]);
+    const cv = cover(), T = typ(L), seen = new Map([[L.cell, 0]]), q = [L.cell], path = new Path2D(), set = new Set([L.cell]), foe = foeBits(L.owner);
     for (let h = 0; h < q.length; h++) {
       const u = q[h], dd = seen.get(u); if (dd >= T.budget) continue;
-      if (u !== L.cell && (cv.inf[u] & ~(1 << L.owner)) !== 0) continue;
+      if (u !== L.cell && (cv.inf[u] & foe) !== 0) continue;
       for (let e = 0; e < 6; e++) {
         const v = G.link[u * 6 + e]; if (v < 0 || seen.has(v)) continue;
-        const O = G.lg[v]; if (O && O.owner !== L.owner) continue;
+        const O = G.lg[v]; if (O && !allied(O.owner, L.owner)) continue;
         seen.set(v, dd + 1); q.push(v);
-        if (!O || (O.type === L.type && O.n < T.cap)) { path.addPath(cellPath(v)); set.add(v); }
+        if (!O || (O.owner === L.owner && O.type === L.type && O.n < T.cap)) { path.addPath(cellPath(v)); set.add(v); }
       }
     }
     G._rcz = { key, path, set }; return path;
@@ -4415,7 +4506,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     };
     if (SL && !G.over) {
       const [lo, hi] = rangeOf(SL), foeRing = new Path2D();
-      for (const c of within(SL.cell, hi)) if (G.zone[c] >= 0 && hexDist(SL.cell, c) >= lo) { const T = lgAt(c); if (T && T.owner !== SL.owner) foeRing.addPath(cellPath(c)); }
+      for (const c of within(SL.cell, hi)) if (G.zone[c] >= 0 && hexDist(SL.cell, c) >= lo) { const T = lgAt(c); if (T && hostile(T.owner, SL.owner)) foeRing.addPath(cellPath(c)); }
       ctx.strokeStyle = 'rgba(255,90,70,0.95)'; ctx.lineWidth = G.mode === 'attack' ? 3.4 : 2.2; ctx.stroke(foeRing);
       const blink = 0.5 + 0.5 * Math.sin(now / 260);
       const rg = rangeRing(SL);
@@ -5506,7 +5597,15 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const f = $('loadIn').files[0]; $('loadIn').value = ''; if (!f) return;
     try { const prev = G; unpackGame(JSON.parse(await f.text())); if (prev && prev.aiRunning) prev.aiRunning = false; closeModal(); autosave(); } catch (e) { console.error(e); $('saveNote').textContent = tr('loadBad'); }
   });
+  // the diplomacy button in the nations table: ask the other nation for an alliance (a computer answers at once), or break one
+  function dipClick(q) {
+    const me = G.cur; if (!humanTurn() || q === me || !G.players[q].alive) return;
+    if (allied(me, q)) { setAlly(me, q, false); G._dipMsg = tr('dipBroke', pname(q)); snd.select(); }
+    else { const why = askAlly(me, q); G._dipMsg = why ? tr('dipNo', pname(q), tr(why)) : tr('dipYes', pname(q)); snd.select(); }
+    ui(true); requestDraw(); autosave();
+  }
   const pickNation = e => {
+    const db = e.target.closest('button[data-dip]'); if (db) { if (!db.disabled && G) { dipClick(+db.dataset.dip); if (!$('modal').hidden) renderModal(); } return; }
     const cb = e.target.closest('button[data-ctl]'); if (cb) { if (!cb.disabled && G) { setControl(+cb.dataset.ctl, !G.players[+cb.dataset.ctl].human); if (!$('modal').hidden) renderModal(); } return; }
     if (e.target.id === 'natMore') { e.preventDefault(); openModal('nations'); return; }
     const r = e.target.closest('.r[data-p]'); if (!r || !G) return;
@@ -5665,7 +5764,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   new ResizeObserver(resize).observe($('boardWrap'));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => requestDraw());
   new MutationObserver(() => requestDraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.__game = { genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
+  window.__game = { setAlly, allied, hostile, canTake, askAlly, aiDiplo, leaderOf, targetsIn, dipClick, genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
     setLang: l => { lang = l; applyLang(); }, setSpeed: v => { S.speed = String(v); }, screen: i => { const r = cvEl.getBoundingClientRect(); return [r.left + view.cw / 2 + (G.X[i] - view.cx) * view.s, r.top + view.ch / 2 + (G.Y[i] - view.cy) * view.s]; } };
 
   applyParams(); writeForm(); resize(); applyLang();

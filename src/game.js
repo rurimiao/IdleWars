@@ -96,11 +96,28 @@
   const wait = ms => (quick() ? (++yieldN % 6 === 0 ? sleep(0) : Promise.resolve()) : sleep(ms * parseFloat(S.speed) * G.speedMul));
   const quick = () => (G._ff === G.round) || !!G.ffUntil || parseFloat(S.speed) * G.speedMul < 0.1;       // the fast-forward button makes the rest of one round instant
   const cities = p => { const o = []; for (const i of G.land) if (G.def[i] >= CITY_MIN && G.co[i] === p) o.push(i); return o; };
-  // fog of war: p sees enemy legions within 8 cells of its own legions and big cities
+  // alliances: G.ally[a][b] is true while a and b are allies; after a break G.truce[a][b] holds that round, and they may fight only from the next round
+  const allied = (a, b) => a === b || (a >= 0 && b >= 0 && !!(G.ally && G.ally[a] && G.ally[a][b]));
+  const hostile = (a, b) => a !== b && a >= 0 && b >= 0 && !allied(a, b) && !(G.truce && G.truce[a] && G.truce[a][b] >= G.round);
+  const foeBits = p => { let m = 0; for (let q = 0; q < G.players.length; q++) if (hostile(p, q)) m |= 1 << q; return m; };
+  const foeArt = (cv, p, c) => { let n = 0; for (const [q, a] of cv.artOwn) if (hostile(p, q)) n += a[c]; return n; };
+  const canTake = (c, p) => G.co[c] !== p && (G.co[c] < 0 || hostile(p, G.co[c]));       // a neutral or hostile city can be taken, an ally's cannot
+  const allyOf = p => G.players.filter(q => q.id !== p && q.alive && allied(p, q.id)).map(q => q.id);
+  function setAlly(a, b, on) {
+    const n = G.players.length;
+    if (!G.ally) G.ally = G.players.map(() => new Array(n).fill(false));
+    if (!G.truce) G.truce = G.players.map(() => new Array(n).fill(0));
+    if (a === b || !!G.ally[a][b] === on) return false;
+    G.ally[a][b] = G.ally[b][a] = on;
+    if (!on) G.truce[a][b] = G.truce[b][a] = G.round;
+    logMsg(on ? 'logAlly' : 'logUnally', [a, b], -1);
+    touch(); return true;
+  }
+  // fog of war: p sees enemy legions within 8 cells of its own and its allies' legions and big cities
   function visMask(p) {
     const v = new Uint8Array(COLS * ROWS);
-    for (const L of G.L) if (L.owner === p) for (const c of within(L.cell, 8)) v[c] = 1;
-    for (const i of G.land) if (G.def[i] >= CITY_MIN && G.co[i] === p) for (const c of within(i, 8)) v[c] = 1;
+    for (const L of G.L) if (allied(L.owner, p)) for (const c of within(L.cell, 8)) v[c] = 1;
+    for (const i of G.land) if (G.def[i] >= CITY_MIN && allied(G.co[i], p)) for (const c of within(i, 8)) v[c] = 1;
     return v;
   }
   const alivePlayers = () => G.order.filter(p => G.players[p].alive);
@@ -197,7 +214,7 @@
   }
   function moveLegion(L, to) {
     const from = L.cell; G.lg[from] = null; G.lg[to] = L; L.cell = to; L.mv = { from, t0: performance.now() }; touch();
-    if (typ(L).take && isCity(to) && G.co[to] !== L.owner) capture(to, L.owner);
+    if (typ(L).take && isCity(to) && canTake(to, L.owner)) capture(to, L.owner);
   }
 
   // ---------- new game ----------
@@ -331,19 +348,19 @@
     }
     G.cv = { inf, infAll, artTot, artOwn }; G.cvVer = G.ver; return G.cv;
   }
-  // A cell is cut for p when an enemy legion stands on it, or enemy infantry reaches it and p's own infantry does not (a standoff lets supplies through).
-  function cutFor(p, c, cv) {
-    const m = cv.inf[c], own = 1 << p;
-    if ((m & ~own) !== 0 && (cv.infAll[c] & own) === 0) return true;
-    const L = G.lg[c]; return !!(L && L.owner !== p);
+  // A cell is cut for p when a hostile legion stands on it, or hostile infantry reaches it and p's own infantry does not (a standoff lets supplies through).
+  function cutFor(p, c, cv, foe) {
+    const m = cv.inf[c], own = 1 << p; if (foe == null) foe = foeBits(p);
+    if ((m & foe) !== 0 && (cv.infAll[c] & own) === 0) return true;
+    const L = G.lg[c]; return !!(L && hostile(L.owner, p));
   }
   function reachOf(p) {
     const r = G.reach[p]; if (r && r.ver === G.ver) return r;
-    const cv = cover(), n = COLS * ROWS, dist = new Int16Array(n).fill(-1), par = new Int32Array(n).fill(-1), q = [];
-    for (const i of G.land) if (G.def[i] >= CITY_MIN && G.co[i] === p && !cutFor(p, i, cv)) { dist[i] = 0; q.push(i); }
+    const cv = cover(), n = COLS * ROWS, dist = new Int16Array(n).fill(-1), par = new Int32Array(n).fill(-1), q = [], foe = foeBits(p);
+    for (const i of G.land) if (G.def[i] >= CITY_MIN && G.co[i] === p && !cutFor(p, i, cv, foe)) { dist[i] = 0; q.push(i); }
     for (let h = 0; h < q.length; h++) {
       const u = q[h];
-      for (let e = 0; e < 6; e++) { const v = G.link[u * 6 + e]; if (v < 0 || dist[v] >= 0 || cutFor(p, v, cv)) continue; dist[v] = dist[u] + 1; par[v] = u; q.push(v); }
+      for (let e = 0; e < 6; e++) { const v = G.link[u * 6 + e]; if (v < 0 || dist[v] >= 0 || cutFor(p, v, cv, foe)) continue; dist[v] = dist[u] + 1; par[v] = u; q.push(v); }
     }
     // a legion in a held cell is still supplied when the road reaches any free cell next to it
     for (const L of G.L) {
@@ -357,7 +374,7 @@
 
   // ---------- orders ----------
   function planRoute(L, tgt) {
-    return findPath(G.link, L.cell, tgt, v => { const o = G.lg[v]; return o && o.owner !== L.owner ? Infinity : o ? 1.5 : 1; });       // a friend's cell can be walked through but not stopped on: the road goes round friends when that is about as short
+    return findPath(G.link, L.cell, tgt, v => { const o = G.lg[v]; return o && !allied(o.owner, L.owner) ? Infinity : o ? 1.5 : 1; });       // a friend's (or an ally's) cell can be walked through but not stopped on: the road goes round friends when that is about as short
   }
   function validTarget(L, tgt) {
     if (tgt < 0 || tgt === L.cell || isBlockedCell(tgt)) return false;
@@ -410,7 +427,7 @@
     logMsg('logAtkCell', [L.owner, { lg: L.id }, { zn: G.zone[cell] }], L.owner, true); touch(); return true;
   }
   function orderAttack(L, T, vc) {
-    if (!canAct(L) || L.st !== 'alert' || !T || T.dead || T.owner === L.owner || !inRange(L, T)) return false;
+    if (!canAct(L) || L.st !== 'alert' || !T || T.dead || !hostile(L.owner, T.owner) || !inRange(L, T)) return false;
     if (vc && L.type === 0) { const [lo, hi] = rangeOf(L); if (vc.length !== 3 || vc.some(c => hexDist(L.cell, c) < lo || hexDist(L.cell, c) > hi)) return false; }       // all three cells of the corner must be in range
     snap(L); L.atk = T.id; L.atkV = vc && vc.includes(T.cell) ? vc : null; L.acted = true; L.ordRound = G.round; logMsg('logAtkOrder', [L.owner, { lg: L.id }, T.owner, { lg: T.id }], L.owner, true); rec({ k: 'atk', id: L.id, p: L.owner, cell: L.cell, to: T.cell, tid: T.id }); touch(); return true;
   }
@@ -439,7 +456,7 @@
       L.undo = { split: { tid: N.id, amt, share, merge: false } };
       N.mv = { from: L.cell, t0: performance.now() };
       L.n -= amt; L.sup -= share;
-      if (T.take && isCity(cell) && G.co[cell] !== L.owner) { capture(cell, L.owner); L.undo = null; }       // a split that took a city cannot be taken back
+      if (T.take && isCity(cell) && canTake(cell, L.owner)) { capture(cell, L.owner); L.undo = null; }       // a split that took a city cannot be taken back
     }
     L.acted = true; L.splitRound = G.round; const sp = { k: 'split', id: L.id, p: L.owner, cell: L.cell, to: cell, amt: splitInfo.amt, tid: splitInfo.tid, merge: !!O };
     const sm = logMsg(sp.merge ? 'evMerge' : 'evSplit', [L.owner, { lg: L.id }, splitInfo.amt, { lg: splitInfo.tid }], L.owner, true);
@@ -487,6 +504,7 @@
     P.pending.splice(i, 1); P.stock += o.n * TYPES[o.type].cost; st(p)[4] -= o.n * TYPES[o.type].cost; touch(); return true;
   }
   function startTurn(p) {
+    G._dipMsg = '';
     for (const L of G.L) if (L.owner === p) { L.acted = false; L.undo = null; L.why = null; L.recvN = 0; L.cpFree = false; L.grp = 0; }
     const me = viewer(), S0 = G.sel;
     if (S0 >= 0 && !((G.lg[S0] && G.lg[S0].owner === me) || (G.def[S0] > 0 && G.co[S0] === me))) G.sel = -1;
@@ -497,7 +515,7 @@
   }
   function targetsIn(L) {
     const [lo, hi] = rangeOf(L), out = [];
-    for (const c of within(L.cell, hi)) { const T = G.lg[c]; if (T && T.owner !== L.owner && !T.dead && hexDist(L.cell, c) >= lo) out.push(T); }
+    for (const c of within(L.cell, hi)) { const T = G.lg[c]; if (T && hostile(L.owner, T.owner) && !T.dead && hexDist(L.cell, c) >= lo) out.push(T); }
     return out.sort((a, b) => hexDist(L.cell, a.cell) - hexDist(L.cell, b.cell) || b.n - a.n);
   }
   function rollHits(n, pct) { let h = 0; for (let k = 0; k < n; k++) if (Math.random() * 100 < pct) h++; return h; }
@@ -512,13 +530,13 @@
     const T = typ(L), route = planRoute(L, L.tgt);
     if (!route) return { cancel: true };
     let budget = T.budget, last = -1, merge = -1, hit = false, blocked = false;
-    const path = route.path;
+    const path = route.path, foe = foeBits(L.owner);
     for (let k = 0; k < path.length && budget >= 1; k++) {
       budget--;
       const c = path[k], occ = G.lg[c];
-      if (occ && occ.owner === L.owner) { if (k === path.length - 1) blocked = true; }       // a friend on the last cell: the march ends before it
+      if (occ && allied(occ.owner, L.owner)) { if (k === path.length - 1) blocked = true; }       // a friend (or an ally) on the last cell: the march ends before it
       else last = k;
-      if ((cv.inf[c] & ~(1 << L.owner)) !== 0) { hit = true; break; }
+      if ((cv.inf[c] & foe) !== 0) { hit = true; break; }
       if (merge === k) break;
     }
     return { path, last, merge, hit, blocked, at: last };
@@ -534,7 +552,7 @@
     let moved = false;
     if (at >= 0) {
       moved = true;
-      if (T.take) for (let k = 0; k < at; k++) { const c = path[k]; if (isCity(c) && G.co[c] !== L.owner && !G.lg[c]) capture(c, L.owner); }
+      if (T.take) for (let k = 0; k < at; k++) { const c = path[k]; if (isCity(c) && canTake(c, L.owner) && !G.lg[c]) capture(c, L.owner); }
       if (merge >= 0) {
         const A = G.lg[path[at]], x = Math.min(L.n, T.cap - A.n), share = Math.floor(L.sup * x / L.n);
         A.n += x; A.sup += share; L.n -= x; L.sup -= share; capSup(A);
@@ -650,12 +668,12 @@
     rep.ms = stepMs ? ent.size * stepMs + stepMs : 0;
     if (stepMs) for (const [L, e] of ent) clrCam(L.cell, delay.get(L) || 0);
     for (const [L] of movers) G.lg[L.cell] = null;       // everybody leaves first, so that two legions can pass each other
-    const stand = (L, c) => { const from0 = from.get(L); G.lg[c] = L; L.cell = c; L.mv = { from: from0, t0: performance.now() + (delay.get(L) || 0) }; if (typ(L).take && isCity(c) && G.co[c] !== L.owner) capture(c, L.owner); };
+    const stand = (L, c) => { const from0 = from.get(L); G.lg[c] = L; L.cell = c; L.mv = { from: from0, t0: performance.now() + (delay.get(L) || 0) }; if (typ(L).take && isCity(c) && canTake(c, L.owner)) capture(c, L.owner); };
     for (const [L, e] of movers) {
       const c = e.P.path[e.at], A = G.lg[c];
       if (A && takesIn(L, A)) { merges.push([L, e, A]); continue; }
       if (A) { G.lg[L.cell] = L; e.at = -1; continue; }
-      if (typ(L).take) for (let k = 0; k < e.at; k++) { const q = e.P.path[k]; if (isCity(q) && G.co[q] !== L.owner && !G.lg[q]) capture(q, L.owner); }
+      if (typ(L).take) for (let k = 0; k < e.at; k++) { const q = e.P.path[k]; if (isCity(q) && canTake(q, L.owner) && !G.lg[q]) capture(q, L.owner); }
       stand(L, c);
     }
     for (const [L, e, A] of merges) {
@@ -685,8 +703,8 @@
   // who a fixed strike hits now (an empty list: it hits nothing)
   function strikeHits(k) {
     const L = k.s, cells = k.cells || [k.cell];
-    if (L.type === 1) return cells.map(c => G.lg[c]).filter(T => T && !T.dead && T !== L && (T.cell === k.cell ? (T.owner === L.owner || inRange(L, T)) : true));       // the splash round the centre does not need to be in range
-    const T = cells.map(c => G.lg[c]).filter(T => T && !T.dead && T.owner !== L.owner && inRange(L, T)).sort((a, b) => hexDist(L.cell, a.cell) - hexDist(L.cell, b.cell) || b.n - a.n)[0];
+    if (L.type === 1) return cells.map(c => G.lg[c]).filter(T => T && !T.dead && T !== L && (T.cell === k.cell ? (!hostile(L.owner, T.owner) || inRange(L, T)) : true));       // the splash round the centre does not need to be in range
+    const T = cells.map(c => G.lg[c]).filter(T => T && !T.dead && hostile(L.owner, T.owner) && inRange(L, T)).sort((a, b) => hexDist(L.cell, a.cell) - hexDist(L.cell, b.cell) || b.n - a.n)[0];
     return T ? [T] : [];
   }
   // before the shots land, the fixed strikes are shown one after the other: the area each unit aims at (a miss is marked); returns how long that takes
@@ -703,7 +721,7 @@
       const L = k.s; if (L.dead) continue;
       const tg = strikeHits(k);
       if (!tg.length) { rep.miss++; logMsg('logClrMiss', [L.owner, { lg: L.id }, { zn: G.zone[k.cell] }], L.owner, true); continue; }
-      for (const T of tg) evs.push({ s: L, t: T, auto: !k.active, half: L.type === 1 && T.cell !== k.cell, fr: T.owner === L.owner });       // splash round the centre does half damage
+      for (const T of tg) evs.push({ s: L, t: T, auto: !k.active, half: L.type === 1 && T.cell !== k.cell, fr: !hostile(L.owner, T.owner) });       // splash round the centre does half damage
     }
     rep.shots = evs.length;
     if (evs.length) await resolveFireSeq(evs, G.round, clrStep(evs.length));
@@ -713,7 +731,7 @@
   // a shot at a legion (turn-by-turn rules): a battery also hits the ring of six round its target, at half damage, friends included (as under the clearing rules)
   function shotsAt(L, T, extra) {
     const out = [{ s: L, t: T, ...extra }];
-    if (L.type === 1) for (const c of nbrs(T.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && !U.dead && U !== L) out.push({ s: L, t: U, ...extra, half: true, fr: U.owner === L.owner }); }
+    if (L.type === 1) for (const c of nbrs(T.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && !U.dead && U !== L) out.push({ s: L, t: U, ...extra, half: true, fr: !hostile(L.owner, U.owner) }); }
     return out;
   }
   // 2. at the end of the round every legion that can fire does so at once. A legion with an attack command shoots only its named target;
@@ -774,19 +792,19 @@
     if (wallD > 0) { razedPts = Math.min(G.def[c], wallD); G.def[c] -= razedPts; if (G.def[c] === 0) cityFalls(c); }
     let loss = Math.floor((d.D - (wallD > 0 ? Math.floor(baseWall * razedPts / wallD) : 0)) / typ(T).per);
     { const men = Math.min(T.n, loss); st(T.owner)[12 + T.type] += men;
-      for (const e of d.by) { const sh = d.D > 0 && e.s.owner !== T.owner ? e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / d.D : 0, a = st(e.s.owner); addHate(T.owner, e.s.owner, (men + razedPts * 0.3) * sh + 1); a[9 + T.type] += men * sh; a[11] += men * sh * TYPES[T.type].cost; a[18] += razedPts * sh; } }
+      for (const e of d.by) { const sh = d.D > 0 && hostile(e.s.owner, T.owner) ? e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / d.D : 0, a = st(e.s.owner); addHate(T.owner, e.s.owner, (men + razedPts * 0.3) * sh + 1); a[9 + T.type] += men * sh; a[11] += men * sh * TYPES[T.type].cost; a[18] += razedPts * sh; } }
     if (loss > 0 && T.n > 0) T.sup = Math.floor(T.sup * Math.max(0, T.n - loss) / T.n);       // the supplies carried shrink with the men: what the dead carried is lost
     T.n -= loss;
     const left = Math.max(0, T.n); let routed = false;
     if (T.n > 0 && T.n < typ(T).min) {       // too few men left to hold together: the legion routs, the rest of the men and its supplies are gone
       routed = true; const rem = T.n; st(T.owner)[12 + T.type] += rem;
-      for (const e of d.by) { const sh = d.D > 0 && e.s.owner !== T.owner ? e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / d.D : 0, a = st(e.s.owner); addHate(T.owner, e.s.owner, rem * sh); a[9 + T.type] += rem * sh; a[11] += rem * sh * TYPES[T.type].cost; }
+      for (const e of d.by) { const sh = d.D > 0 && hostile(e.s.owner, T.owner) ? e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / d.D : 0, a = st(e.s.owner); addHate(T.owner, e.s.owner, rem * sh); a[9 + T.type] += rem * sh; a[11] += rem * sh * TYPES[T.type].cost; }
       T.n = 0;
     }
     if (loss > 0) G.pops.push({ cell: c, txt: '−' + loss, t0: performance.now() });
           for (const e of d.by) logMsg('logFire', [e.s.owner, { lg: e.s.id }, T.owner, { lg: T.id }, e.hits, e.men, e.rate, Math.floor(e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1) / typ(T).per), { zn: G.zone[T.cell] }, e.fr ? 3 : e.half ? 2 : e.auto ? 1 : 0, tb, left], e.s.owner);
     if (T.n <= 0) {
-      const foes = d.by.filter(e => e.s.owner !== T.owner), top = (foes.length ? foes : d.by).reduce((m, e) => { const v = e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1); return v > m.v ? { v, e } : m; }, { v: -1, e: d.by[0] }).e, bump = (p, i) => { const a = st(p); a[i] = (a[i] || 0) + 1; };
+      const foes = d.by.filter(e => hostile(e.s.owner, T.owner)), top = (foes.length ? foes : d.by).reduce((m, e) => { const v = e.hits * TYPES[e.s.type].dmg * (e.half ? 0.5 : 1); return v > m.v ? { v, e } : m; }, { v: -1, e: d.by[0] }).e, bump = (p, i) => { const a = st(p); a[i] = (a[i] || 0) + 1; };
       bump(top.s.owner, routed ? 21 : 20); bump(T.owner, routed ? 23 : 22);
       if (wasCity && S.breakBonus > 0) { G.players[top.s.owner].stock += S.breakBonus; st(top.s.owner)[0] += S.breakBonus; ecoEv(top.s.owner, 'brk', S.breakBonus, T.cell); logMsg('logBreak', [top.s.owner, { ct: T.cell }, S.breakBonus], top.s.owner); }       // the garrison of a city was wiped out or routed
       logMsg(routed ? 'logRout' : 'logDead', [T.owner, { lg: T.id }], T.owner);
@@ -840,7 +858,7 @@
   }
   function artLoss(p, from) {      // percentage points lost to enemy batteries covering the route
     const cv = cover(), r = reachOf(p), own = cv.artOwn.get(p); let loss = 0;
-    for (let c = from; c >= 0; c = r.par[c]) loss += cv.artTot[c] - (own ? own[c] : 0);
+    for (let c = from; c >= 0; c = r.par[c]) loss += foeArt(cv, p, c);
     return loss;
   }
   function economy(p) {
@@ -880,7 +898,7 @@
       if (G.def[c] >= CITY_MAX) { L.bld = false; ev('evMax', [p, { ct: c }, CITY_MAX], p); }
     }
     // send supplies: fighting legions first, then the ones closest to the enemy
-    const rr = reachOf(p), foes = G.L.filter(x => x.owner !== p), want = [];
+    const rr = reachOf(p), foes = G.L.filter(x => hostile(p, x.owner)), want = [];
     for (const L of G.L) { if (L.owner !== p || L.hoard <= 0) continue; const cut = rr.dist[L.cell] < 0; if (cut && !L.cut) ev('evCut', [p, { lg: L.id }], p); L.cut = cut; }
     for (const L of G.L) {
       if (L.owner !== p || L.hoard <= 0) continue;
@@ -1033,7 +1051,7 @@
     if (wrapped) {
       if (!(await roundEnd()) || G !== g) return;
       if (checkOver()) { G.busy = false; G._phase = null; ui(true); return; }
-      G.round++; G.clearing = !!S.clr; logMsg('logRound', [G.round], -1, true);
+      G.round++; G.clearing = !!S.clr; touch(); logMsg('logRound', [G.round], -1, true);
       if (G.ffUntil) {
         if (G.round >= G.ffUntil) { G.ffUntil = 0; for (const q of G.players) if (q.everHuman && q.alive) q.human = true; logMsg('logFfDone', [G.round], -1, true); }
         else G._ff = G.round;

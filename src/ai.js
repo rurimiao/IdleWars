@@ -67,15 +67,15 @@
     // an expedition: the main strike goes for a city far from our land (more than 10 cells from our nearest city); a city on the way, 6 cells or more short of it, shortens the supply road
     const go = G.aiGo && G.aiGo[p], T = go && go.k === 'city' ? go.obj : -1, dT = T >= 0 ? Math.min(...cts.map(q => hexDist(q, T))) : 0, far = !sty.hold && dT > 10;
     if (sites + plans.length >= (sty.hold ? 2 : 3) + (far ? 1 : 0)) return;
-    const sh = zoneShares(), cv = cover(), own = 1 << p;
+    const sh = zoneShares(), cv = cover(), foeM = foeBits(p);
     let best = -1, bsc = -1e9, fwd = false;
     for (const c of G.land) {
-      if (G.lg[c] || G.def[c] > 0 || isBlockedCell(c) || G.zone[c] < 0 || (cv.inf[c] & ~own)) continue;
+      if (G.lg[c] || G.def[c] > 0 || isBlockedCell(c) || G.zone[c] < 0 || (cv.inf[c] & foeM)) continue;
       let dOwn = 99; for (const q of cts) dOwn = Math.min(dOwn, hexDist(c, q));
       if (dOwn < 4 || dOwn > (sty.home || 16)) continue;
       let dFoe = 99; for (const F of foes) dFoe = Math.min(dFoe, hexDist(c, F.cell));
       if (dFoe < 4) continue;
-      let dCity = 99; for (const q of G.land) if (G.def[q] >= CITY_MIN && G.co[q] !== p) dCity = Math.min(dCity, hexDist(c, q));
+      let dCity = 99; for (const q of G.land) if (G.def[q] >= CITY_MIN && notAlly(p, G.co[q])) dCity = Math.min(dCity, hexDist(c, q));
       const z = G.Z[G.zone[c]], m = sh[G.zone[c]], tot = m ? [...m.values()].reduce((a, b) => a + b, 0) : 0, mine = m ? (m.get(p) || 0) : 0, gain = z.out * ((mine + 1) / (tot + 1) - (tot ? mine / tot : 0)), sc = gain * 0.7 + chokeAt(c) * 40 - dOwn * 8 - Math.min(dCity, 12) * 3 + (dFoe < 8 ? 15 : 0) + (far && hexDist(c, T) >= 6 && hexDist(c, T) < dT ? (dT - hexDist(c, T)) * 60 + dOwn * 8 : 0);
       if (sc > bsc) { bsc = sc; best = c; fwd = far && hexDist(c, T) >= 6 && hexDist(c, T) < dT - 2; }
     }
@@ -87,7 +87,7 @@
     bs[p].push({ lid: pick.id, cell: best });
     aiNote(p, fwd ? tr('aiForward', lname(pick), zoneName(G.zone[best]), cityName(T)) : tr('aiSite', lname(pick), zoneName(G.zone[best])), 'z:' + G.zone[best], true);
   }
-  const enemyInfNear = (p, c, r) => { let s = 0; for (const q of within(c, r)) { const F = G.lg[q]; if (F && F.owner !== p && F.type === 0) s += F.n; } return s; };
+  const enemyInfNear = (p, c, r) => { let s = 0; for (const q of within(c, r)) { const F = G.lg[q]; if (F && notAlly(p, F.owner) && F.type === 0) s += F.n; } return s; };
   function aiProduce(p, k, foes) {
     const P = G.players[p];
     const cts = cities(p).filter(i => citySupplied(p, i));
@@ -119,7 +119,7 @@
     return { need: Math.round(upk * CAMPAIGN_TURNS * (1 + 0.01 * d)), carried, full };
   }
   // a battery's splash hits the ring round its target: enemies there count for the shot, our own men against it (0 for infantry)
-  const splashScore = (L, t) => { let f = 0, e = 0; if (L.type === 1) for (const c of nbrs(t.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && U !== L) { if (U.owner === L.owner) f += U.n; else e += U.n; } } return e * 0.5 - f * 1.5; };
+  const splashScore = (L, t) => { let f = 0, e = 0; if (L.type === 1) for (const c of nbrs(t.cell)) { const U = c >= 0 ? G.lg[c] : null; if (U && U !== L) { if (!hostile(L.owner, U.owner)) f += U.n; else e += U.n; } } return e * 0.5 - f * 1.5; };
   function aiPickTarget(L, ts) {       // the garrison of the city under attack first, then batteries, then the biggest legion
     let best = null, bs = -1;
     const go = G.aiGo && G.aiGo[strikeKeyOf(L)];
@@ -141,14 +141,15 @@
   const intentCell = (p, it) => {       // the cell the strike force heads for, -1 when the intention is over
     const mine = x => x.owner === p;
     // a city stays the target while the enemy holds it; once its walls are down below a city, one of ours walks in and repairs it, and the first point repaired makes it ours
-    if (it.k === 'city') return G.co[it.t] >= 0 && G.co[it.t] !== p && G.def[it.t] > 0 ? it.t : -1;
+    if (it.k === 'city') return notAlly(p, G.co[it.t]) && G.def[it.t] > 0 ? it.t : -1;
     if (it.k === 'zone') {       // take the zone: enemy legions there are fought, empty ground is occupied, and once it is ours the force stays and defends it
       const z = G.Z[it.t]; if (!z || !z.cells.length) return -1;
-      let best = null; for (const L of G.L) if (!L.dead && !mine(L) && G.zone[L.cell] === it.t && (!best || L.n > best.n)) best = L;
+      let best = null; for (const L of G.L) if (!L.dead && notAlly(p, L.owner) && G.zone[L.cell] === it.t && (!best || L.n > best.n)) best = L;
       if (best) return best.cell;
-      for (const c of G.land) if (G.zone[c] === it.t && G.def[c] >= CITY_MIN && G.co[c] >= 0 && G.co[c] !== p) return c;
+      for (const c of G.land) if (G.zone[c] === it.t && G.def[c] >= CITY_MIN && notAlly(p, G.co[c])) return c;
       return z.ai;
     }
+    if (allied(p, it.t)) return -1;       // no revenge on an ally
     let bc = -1, bs = -1e18;       // nation: its most attractive city, else its nearest legion
     const mineF = G.L.filter(x => x.owner === p && x.type === 0 && !x.dead);
     const own = aiStyleOf(p).hold ? cities(p) : null, near = c => !own || own.some(q => hexDist(q, c) <= 10);       // the stay-home style strikes back only at cities close to its own land
@@ -158,6 +159,44 @@
     return bl ? bl.cell : -1;
   };
   const hateOf = (p, q) => (G.hate && G.hate[p] && G.hate[p][q]) || 0;
+  // ---------- alliances ----------
+  const notAlly = (p, q) => q >= 0 && !allied(p, q);       // someone to plan against: an enemy, or a nation just out of an alliance
+  const ALLY_LEAD = 1.3;       // a leader is a nation 30% stronger than the next one
+  const power = q => cities(q).length * 200 + G.L.reduce((a, L) => a + (L.owner === q && !L.dead ? L.n : 0), 0);
+  function leaderOf() {
+    const al = alivePlayers(); if (al.length < 3) return -1;
+    const ps = al.map(q => [q, power(q)]).sort((a, b) => b[1] - a[1]);
+    return ps[0][1] >= ps[1][1] * ALLY_LEAD ? ps[0][0] : -1;
+  }
+  // would computer nation p take q as an ally? the answer and its reason (a text key)
+  function aiWantsAlly(p, q) {
+    const al = alivePlayers(), lead = leaderOf();
+    if (al.length <= 2) return 'dipTwo';
+    if (hateOf(p, q) >= HATE_MIN) return 'dipHate';
+    if (lead === q) return 'dipLead';
+    if (!al.some(x => x !== p && x !== q && !allied(p, x) && !allied(q, x))) return 'dipNoFoe';
+    if (lead < 0 || lead === p) return 'dipNoNeed';
+    return null;
+  }
+  // a player asks computer nation q for an alliance: q answers at once
+  function askAlly(p, q) {
+    const why = G.players[q].human ? null : aiWantsAlly(q, p);
+    if (!why) setAlly(p, q, true);
+    return why;
+  }
+  // a computer nation at the start of its turn: it leaves an alliance that no longer helps it, and teams up with another computer nation against a leader
+  function aiDiplo(p) {
+    const al = alivePlayers(), lead = leaderOf();
+    for (const q of allyOf(p)) {
+      const why = al.length <= 2 ? 'dipTwo' : q === lead ? 'dipLead' : hateOf(p, q) >= HATE_MIN ? 'dipHate' : !al.some(x => x !== p && !allied(p, x)) ? 'dipNoFoe' : null;
+      if (why && setAlly(p, q, false)) aiNote(p, tr('aiUnally', pname(q), tr(why)));
+    }
+    if (lead < 0 || lead === p) return;
+    for (const q of al) {
+      if (q === p || q === lead || G.players[q].human || allied(p, q)) continue;
+      if (!aiWantsAlly(p, q) && !aiWantsAlly(q, p) && setAlly(p, q, true)) { aiNote(p, tr('aiAlly', pname(q), pname(lead))); return; }       // one new ally a turn
+    }
+  }
   const intentOver = (p, it) => {
     if (G.round > it.until) return 'aiIntentTimeout';
     if (it.k === 'nation') { if (!G.players[it.t].alive) return 'aiIntentDone'; if (it.by === 'ai' && hateOf(p, it.t) < 30 && G.round - it.r0 > 4) return 'aiIntentCalm'; }
@@ -195,13 +234,13 @@
     if (field.length && force >= needHate * 0.6) {
       // revenge ideas follow the hatred: one per nation that has hurt us enough, getting stronger as the hatred grows
       for (let q = 0; q < G.players.length; q++) {
-        const h = hateOf(p, q); if (q === p || !G.players[q].alive) continue;
+        const h = hateOf(p, q); if (q === p || !G.players[q].alive || allied(p, q)) continue;
         const ex = I.find(x => x.k === 'nation' && x.t === q);
         if (ex) { ex.str = intentStr(p, ex); if (h >= ex.last + 60) { ex.last = h; ex.until = Math.min(G.round + INTENT_LIFE, ex.until + 10); intentNote(ex, tr('itHistHate', Math.round(h))); } }
         else if (h >= HATE_MIN && I.filter(x => x.by === 'ai').length < MAX_AI_INTENTS) { addIntent(p, 'nation', q, 'ai', tr('itHistFormHate', Math.round(h))); aiNote(p, tr('aiRevenge', pname(q), Math.round(h))); }
       }
       if (!sty.hold && I.filter(x => x.k === 'city').length < (force >= STRIKE_MEN * 2 ? 2 : 1) && force >= need && I.filter(x => x.by === 'ai').length < MAX_AI_INTENTS) {       // a second city when the army can carry two strikes
-        const cs = G.land.filter(i => wreckOrCity(i) && G.co[i] !== p && G.co[i] >= 0 && !I.some(x => x.k === 'city' && x.t === i));
+        const cs = G.land.filter(i => wreckOrCity(i) && notAlly(p, G.co[i]) && !I.some(x => x.k === 'city' && x.t === i));
         // a city close to our own land, weakly held: the distance counts a lot and the defenders around it (not only the garrison) are weighed in
         const mine = cities(p), local = i => { let n = 0; for (const F of foes) if (hexDist(F.cell, i) <= 4) n += F.type === 0 ? F.n : F.n * 1.5; return n; };
         let best = -1, bd = -1e18; for (const i of cs) { const dOwn = mine.length ? Math.min(...mine.map(q => hexDist(q, i))) : 99; const sc = cityPrize(i) - dOwn * 40 - local(i) * 6 - G.def[i] * 0.4; if (sc > bd) { bd = sc; best = i; } }
@@ -225,8 +264,8 @@
   function aiProng(p, key, act, cell, field, need, foes, prev) {
     const prevStrike = prev.set, prevFor = prev.id;
     G.aiGo[key] = { obj: cell, k: act.k, id: act.id };
-    const peaceful = act.k === 'zone' && !(G.lg[cell] && G.lg[cell].owner !== p) && !(G.def[cell] >= CITY_MIN && G.co[cell] >= 0 && G.co[cell] !== p);       // nobody to fight in the zone: a few legions are enough
-    let near = 0; for (const F of foes) if (F.owner !== p && hexDist(F.cell, cell) <= 4) near += F.type === 0 ? F.n : F.n * 1.5;
+    const peaceful = act.k === 'zone' && !(G.lg[cell] && notAlly(p, G.lg[cell].owner)) && !(G.def[cell] >= CITY_MIN && notAlly(p, G.co[cell]));       // nobody to fight in the zone: a few legions are enough
+    let near = 0; for (const F of foes) if (hexDist(F.cell, cell) <= 4) near += F.type === 0 ? F.n : F.n * 1.5;
     const want = peaceful ? 30 : act.by === 'you' ? 1e9 : Math.max(need, (near + 20) * 1.8, act.k === 'city' ? STRIKE_MEN : 0);       // about twice what holds the ground round the target, and for a city at least six full legions (what took a starting city in tests/siege_bench.js)
     // the strike force keeps its members from one turn to the next (so legions do not keep joining and leaving); the nearest field infantry fills it up to what is wanted
     const keep = act.id === prevFor ? field.filter(x => prevStrike.has(x.id)) : [];
@@ -237,7 +276,7 @@
       act.hard = near > sum * 1.2 ? (act.hard || 0) + 1 : 0;
       // a strike that gets no closer for 8 turns once it is storming (enemy legions on the way stop every march) is given up the same way
       const inf = G.L.filter(x => G._strike[key].has(x.id) && x.type === 0), dAvg = inf.length ? inf.reduce((a, x) => a + hexDist(x.cell, cell), 0) / inf.length : 99;
-      if (act.dBest == null || dAvg < act.dBest - 1 || G.lg[cell] && G.lg[cell].owner !== p && G.lg[cell].n < (act.garLow ?? 1e9)) { act.dBest = Math.min(act.dBest ?? 99, dAvg); act.garLow = G.lg[cell] ? G.lg[cell].n : 0; act.stuckFrom = G.round; }
+      if (act.dBest == null || dAvg < act.dBest - 1 || G.lg[cell] && notAlly(p, G.lg[cell].owner) && G.lg[cell].n < (act.garLow ?? 1e9)) { act.dBest = Math.min(act.dBest ?? 99, dAvg); act.garLow = G.lg[cell] ? G.lg[cell].n : 0; act.stuckFrom = G.round; }
       if (!act.storm) act.stuckFrom = G.round; else if (G.round - act.stuckFrom >= 8) act.hard = 6;
       if (act.hard >= 6) { aiNote(p, tr('aiIntentHard', intentText(act))); endIntent(p, act, 'aiIntentHard'); G.aiGo[key] = null; G._strike[key] = new Set(); return; }
     }
@@ -252,7 +291,7 @@
     const rr = reachOf(p), cv = cover(), own = 1 << p;
     if (peaceful) R.go = true;
     if (!R.go) {
-      let rc = -1, rb = 1e9; for (const c of within(cell, 10)) { if (isBlockedCell(c) || G.lg[c] || rr.dist[c] < 0 || (cv.inf[c] & ~own) || hexDist(c, cell) < 4) continue; const d = hexDist(c, cell); if (d < rb) { rb = d; rc = c; } }
+      let rc = -1, rb = 1e9; for (const c of within(cell, 10)) { if (isBlockedCell(c) || G.lg[c] || rr.dist[c] < 0 || (cv.inf[c] & foeBits(p)) || hexDist(c, cell) < 4) continue; const d = hexDist(c, cell); if (d < rb) { rb = d; rc = c; } }
       R.cell = rc;
       // it goes when the infantry at the rally point comes to most of what is wanted and the batteries are there too (as many as there are, up to three)
       const strikers = G.L.filter(x => G._strike[key].has(x.id)); let there = 0, all = 0, gunsAll = 0, gunsThere = 0;
@@ -264,7 +303,7 @@
       else if (ready || G.round - R.since > (act.by === 'you' ? 8 : 24)) R.go = true;
     }
     // the siege: while our batteries can work on the garrison, the infantry waits out of the city's reach; it goes in once the garrison is weak, the guns are gone or the siege drags on
-    const gar = G.lg[cell] && G.lg[cell].owner !== p ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[key].has(x.id) && x.type === 1);
+    const gar = G.lg[cell] && notAlly(p, G.lg[cell].owner) ? G.lg[cell] : null, guns = G.L.filter(x => G._strike[key].has(x.id) && x.type === 1);
     if (R.go && R.siege == null) R.siege = G.round;
     G.aiGo[key].assault = peaceful || !gar || gar.n <= TYPES[gar.type].min * 2 || !guns.length || (R.siege != null && G.round - R.siege > 12);
     act.storm = G.aiGo[key].assault;
@@ -283,7 +322,7 @@
   function aiRoutes(p, seen) {
     const w = new Map(), who = new Map();
     for (const F of G.L) {
-      if (F.owner === p || F.dead || !seen(F.cell)) continue;
+      if (!notAlly(p, F.owner) || F.dead || !seen(F.cell)) continue;
       const rr = reachOf(F.owner); if (rr.dist[F.cell] <= 0) continue;
       for (let c = F.cell; c >= 0; c = rr.par[c]) { w.set(c, (w.get(c) || 0) + 1); let m = who.get(c); if (!m) who.set(c, m = new Map()); m.set(F.owner, (m.get(F.owner) || 0) + 1); }
     }
@@ -312,14 +351,17 @@
   // cities in danger: enemy men within 5 cells outweigh our men within 2; the nearest idle legions (not the strike force) are sent there, the emptiest city first
   function aiDefend(p, foes) {
     const out = new Map(), used = new Set(), strike = allStrike(p), w = L => (L.type === 0 ? L.n : L.n * 1.5), danger = [];
-    for (const c of cities(p)) {
-      let threat = 0; for (const F of foes) if (hexDist(F.cell, c) <= 5) threat += w(F);
+    // an ally's city close to our land (within 12 cells of one of ours) is helped like our own, after our own
+    const mineC = cities(p), helpC = [];
+    for (const q of allyOf(p)) for (const c of cities(q)) if (mineC.some(m => hexDist(m, c) <= 12)) helpC.push(c);
+    for (const c of [...mineC, ...helpC]) {
+      let threat = 0; for (const F of foes) if (hexDist(F.cell, c) <= 5 && hostile(G.co[c], F.owner)) threat += w(F);
       if (!threat) continue;
-      let guard = 0; for (const q of within(c, 2)) { const O = G.lg[q]; if (O && O.owner === p) guard += w(O); }
-      if (threat > guard * 0.8) danger.push({ c, need: threat - guard * 0.8, empty: !G.lg[c] });
+      let guard = 0; for (const q of within(c, 2)) { const O = G.lg[q]; if (O && allied(O.owner, G.co[c])) guard += w(O); }
+      if (threat > guard * 0.8) danger.push({ c, need: threat - guard * 0.8, empty: !G.lg[c], ally: G.co[c] !== p });
     }
     for (const c of G.land) if (G.co[c] === p && G.wasCity[c] && G.def[c] > 0 && G.def[c] < CITY_MIN && !G.lg[c]) danger.push({ c, need: 1, empty: true });       // a wrecked city of ours: someone walks in and repairs it
-    danger.sort((a, b) => (b.empty - a.empty) || (b.need - a.need));
+    danger.sort((a, b) => (!!a.ally - !!b.ally) || (b.empty - a.empty) || (b.need - a.need));
     const idle = G.L.filter(x => x.owner === p && !x.dead && x.st === 'alert' && !x.acted && !x.bld && !isCity(x.cell) && !strike.has(x.id) && x.n >= TYPES[x.type].min);
     // batteries shelling one of our cities: up to two of the nearest idle infantry legions go for each (standing right next to a battery is inside its blind spot)
     const sortie = new Map(), own = cities(p);
@@ -338,7 +380,7 @@
   // and the legion can actually get off its cell this turn
   function aiMarch(L, c) {
     const r = planRoute(L, c); if (!r || r.cost > hexDist(L.cell, c) * 2 + 4) return false;
-    if (r.path.slice(0, typ(L).budget).every(q => G.lg[q] && G.lg[q].owner === L.owner)) return false;       // friends fill every cell it could reach this turn: it would not move at all
+    if (r.path.slice(0, typ(L).budget).every(q => G.lg[q] && allied(G.lg[q].owner, L.owner))) return false;       // friends fill every cell it could reach this turn: it would not move at all
     return orderMarch(L, c);
   }
   // walk to the nearest free cell at a distance from lo to hi of `c` (stays put when already there); true when an order was given or none is needed.
@@ -384,12 +426,12 @@
     if (L.st === 'march' && L.tgt != null && !(inStrike && hexDist(L.tgt, go.obj) > (L.type === 0 ? (go.assault ? 1 : 5) : T.rmax + 1))) return;
     const onCity = isCity(L.cell);
     const ts = targetsIn(L).filter(t => seen(t.cell));
-    const R = G._rally && G._rally[key], cv = cover(), own = 1 << p;
-    const inFoeReach = q => !!(cv.inf[q] & ~own);
+    const R = G._rally && G._rally[key], cv = cover(), foeM = foeBits(p);
+    const inFoeReach = q => !!(cv.inf[q] & foeM);
     // standing on a city knocked below the threshold (an enemy's, or one of our own): whoever repairs a site owns it, so rebuild it into our own city
     if (!onCity && G.def[L.cell] > 0) {
       if (L.bld) return;       // keeps repairing (and, being on alert, still fires at round end)
-      if (G.co[L.cell] >= 0 && (G.co[L.cell] !== p || G.wasCity[L.cell])) { if (L.sup >= BUILD_COST * 10 && canRepair(L)) orderRepair(L); return; }       // without supplies it stays put and waits for them
+      if (G.co[L.cell] >= 0 && (G.co[L.cell] === p ? G.wasCity[L.cell] : notAlly(p, G.co[L.cell]))) { if (L.sup >= BUILD_COST * 10 && canRepair(L)) orderRepair(L); return; }       // without supplies it stays put and waits for them
     }
     // sent out against a battery that shells one of our cities: next to it, then fire
     const so = G._sortie && G._sortie[p] && G._sortie[p].get(L.id);
@@ -495,8 +537,9 @@
     stepsBegin();
     const k = AIK[(G.aiLevel && G.aiLevel[p]) || 'normal'] || AIK.normal;
     const fogV = S.fog ? visMask(p) : null, seen = c => !fogV || !!fogV[c];
-    const foes = G.L.filter(x => x.owner !== p && seen(x.cell));
+    const foes = G.L.filter(x => hostile(p, x.owner) && seen(x.cell));
     aiShift(p);
+    aiDiplo(p);
     aiProduce(p, k, foes);
     if (!(await flush())) { stepsEnd(); return false; }
     aiThink(p, k, aiStyleOf(p), foes);

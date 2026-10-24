@@ -159,7 +159,7 @@
     if (i < 0 || G.zone[i] < 0) return [tr('rHole'), tr('dnHoleB')];
     if (i === L.cell) return [tr('rSame'), tr('dnSameB')];
     if (isBlockedCell(i)) return [tr('dnBlocked'), tr('dnBlockedB')];
-    if (O && O.owner !== L.owner) return [tr('rEnemyThere'), tr('dnEnemyB')];
+    if (O && !allied(O.owner, L.owner)) return [tr('rEnemyThere'), tr('dnEnemyB')];
     if (O) return [tr('rFriendThere'), tr('dnFriendB')];
     return [tr('rNoPath'), tr('dnNoPathB')];
   }
@@ -173,6 +173,8 @@
     if (G.clearing && L.type === 0) return [tr('dnCorner'), tr('dnCornerB')];
     if (!T) return [tr('rNoUnit'), tr('dnNoUnitB')];
     if (T.owner === L.owner) return [tr('rOwn'), tr('dnOwnB')];
+    if (allied(T.owner, L.owner)) return [tr('rAlly'), tr('dnAllyB')];
+    if (!hostile(T.owner, L.owner)) return [tr('rTruce'), tr('dnTruceB')];
     return [tr('xBadAttack'), ''];
   }
   function whySplit(L, amt, i) {
@@ -408,14 +410,14 @@
       const O = h >= 0 ? G.lg[h] : null;
       if (h < 0 || G.zone[h] < 0) r = { no: 'rHole' };
       else if (h === L.cell) r = { no: 'rSame' };
-      else if (O && O.owner !== L.owner) r = { no: 'rEnemyThere' };
+      else if (O && !allied(O.owner, L.owner)) r = { no: 'rEnemyThere' };
       else if (O) r = { no: 'rFriendThere' };
       else {
         const rt = planRoute(L, h);
         if (!rt) r = { no: 'rNoPath' };
         else {
           const path = [L.cell, ...rt.path], cv = cover(); let stop = -1;
-          for (let k = 1; k < path.length; k++) if ((cv.inf[path[k]] & ~(1 << L.owner)) !== 0) { stop = k; break; }
+          const foe = foeBits(L.owner); for (let k = 1; k < path.length; k++) if ((cv.inf[path[k]] & foe) !== 0) { stop = k; break; }
           r = { ok: true, path: stop >= 0 ? path.slice(0, stop + 1) : path, full: path, stop: stop >= 0 ? path[stop] : -1, turns: routeTurns(L, h) };
         }
       }
@@ -431,6 +433,8 @@
       const T = h >= 0 ? lgAt(h) : null;
       if (!T) r = { no: 'rNoUnit' };
       else if (T.owner === L.owner) r = { no: 'rOwn' };
+      else if (allied(T.owner, L.owner)) r = { no: 'rAlly' };
+      else if (!hostile(T.owner, L.owner)) r = { no: 'rTruce' };
       else {
         const d = hexDist(L.cell, T.cell), [lo, hi] = rangeOf(L);
         if (d < lo) r = { no: 'rClose' }; else if (d > hi) r = { no: 'rFar' }; else r = { ok: true, T, men: odds(L, T).men };
@@ -534,12 +538,22 @@
     const rows = [...G.order].map(id => ({ id, n: st[id].n, s: st[id], a: G.players[id].alive, u: upk(id) }));
     rows.sort((a, b) => (b.a - a.a) || (b.n - a.n) || (b.s.men - a.s.men));
     const shown = limit ? rows.slice(0, limit) : rows, q = i => (hide(i) ? '?' : '');
+    // alliances: a tag after the name (the full list in the wide table), and in the wide table a button for the player whose turn it is
+    const me = viewer(), can = humanTurn() && G.cur === me;
+    const tag = id => { const a = allyOf(id); if (!a.length) return ''; return wide ? `<small class="ally" title="${tr('dipAllies')}：${a.map(pname).join('、')}">${tr('dipAllies')}${a.map(q => `<i style="background:${hue(q)}"></i>`).join('')}</small>` : (id !== me && allied(me, id) ? `<small class="ally">${tr('dipAllies')}</small>` : ''); };       // before the name, so a long name does not hide it
+    const dip = id => {
+      if (id === me || !G.players[id].alive || !G.players[me].alive || G.over) return '<b></b>';
+      if (allied(me, id)) return `<button class="cb dbad" data-dip="${id}" ${can ? '' : 'disabled'}>${tr('dipBreak')}</button>`;
+      if (!hostile(me, id)) return `<button class="cb" disabled>${tr('dipTruce')}</button>`;
+      return `<button class="cb dok" data-dip="${id}" ${can ? '' : 'disabled'}>${tr('dipAsk')}</button>`;
+    };
     // legions come in two kinds, each shown as "legions/men"
-    let h = `<div class="r hd"><i style="visibility:hidden"></i><span></span><em>${tr('colCity')}</em><em>${tr('colInf')}</em><em>${tr('colArt')}</em><em>${tr('stock')}</em><em>${tr('income')}</em><em>${tr('upkeep')}</em>` + (wide ? '<em></em>' : '') + `</div>`;
-    h += shown.map(r => `<div class="r ${r.id === G.cur ? 'cur' : ''} ${r.a ? '' : 'out'} ${r.id === G.blink ? 'blk' : ''}" data-p="${r.id}"><i style="background:${hue(r.id)}"></i><span>${pname(r.id)}${wide && !G.players[r.id].human && G.aiStyle ? `<small class="sty">${tr('st_' + (G.aiStyle[r.id] || 'balanced'))}</small>` : ''}</span><b>${r.n}</b>`
+    let h = `<div class="r hd"><i style="visibility:hidden"></i><span></span><em>${tr('colCity')}</em><em>${tr('colInf')}</em><em>${tr('colArt')}</em><em>${tr('stock')}</em><em>${tr('income')}</em><em>${tr('upkeep')}</em>` + (wide ? `<em></em><em>${tr('colDip')}</em>` : '') + `</div>`;
+    if (wide && G._dipMsg) h = `<div class="dipnote">${G._dipMsg}</div>` + h;
+    h += shown.map(r => `<div class="r ${r.id === G.cur ? 'cur' : ''} ${r.a ? '' : 'out'} ${r.id === G.blink ? 'blk' : ''}" data-p="${r.id}"><i style="background:${hue(r.id)}"></i><span>${tag(r.id)}${pname(r.id)}${wide && !G.players[r.id].human && G.aiStyle ? `<small class="sty">${tr('st_' + (G.aiStyle[r.id] || 'balanced'))}</small>` : ''}</span><b>${r.n}</b>`
       + `<b>${q(r.id) || `${r.s.infN}/${r.s.infM}`}</b><b>${q(r.id) || `${r.s.artN}/${r.s.artM}`}</b><b>${q(r.id) || G.players[r.id].stock}</b><b>${q(r.id) || '+' + G.players[r.id].income}</b><b>${q(r.id) || '−' + r.u}</b>`
-      + (wide ? `<button class="cb" data-ctl="${r.id}" ${r.a && !G.over ? '' : 'disabled'}>${G.players[r.id].human ? tr('autoPlay') : tr('takeOver')}</button>` : '') + `</div>`).join('');
-    if (limit && rows.length > limit) h = h.replace(`<span></span>`, `<span><a href="#" id="natMore">${tr('allShort')} +${rows.length - limit}</a></span>`);
+      + (wide ? `<button class="cb" data-ctl="${r.id}" ${r.a && !G.over ? '' : 'disabled'}>${G.players[r.id].human ? tr('autoPlay') : tr('takeOver')}</button>` + dip(r.id) : '') + `</div>`).join('');
+    if (limit) h = h.replace(`<span></span>`, `<span><a href="#" id="natMore">${rows.length > limit ? `${tr('allShort')} +${rows.length - limit}` : tr('colDip')}</a></span>`);       // the link opens the full table, with the diplomacy buttons
     return h;
   }
   // the two rule switches under the camera buttons: fog of war, and who acts when (in turn, or cleared together at the end of the round)
@@ -653,13 +667,13 @@
     const key = G.ver + ':' + L.id; if (G._cr && G._cr.key === key) return G._cr.t;
     const p = L.owner, cv = cover(), cts = cities(p), fv = fogVis(); let t = tr('cutWhyNone'), best = -1, bd = 1e9;
     for (const c of cts) { const d = hexDist(L.cell, c); if (d < bd) { bd = d; best = c; } }
-    const r = best >= 0 ? findPath(G.link, L.cell, best, v => { const o = G.lg[v]; return o && o.owner !== p ? 3 : 1; }) : null;
+    const r = best >= 0 ? findPath(G.link, L.cell, best, v => { const o = G.lg[v]; return o && hostile(o.owner, p) ? 3 : 1; }) : null;
     if (r && r.path) {
       for (const c of r.path) {
         if (!cutFor(p, c, cv)) continue;
         const O = G.lg[c], list = [];
-        if (O && O.owner !== p) list.push(O);
-        for (const F of G.L) { if (F.dead || F.owner === p || F.type !== 0 || F.st === 'march' || list.includes(F)) continue; const [lo, hi] = rangeOf(F), d = hexDist(F.cell, c); if (d >= lo && d <= hi) list.push(F); }
+        if (O && hostile(O.owner, p)) list.push(O);
+        for (const F of G.L) { if (F.dead || !hostile(F.owner, p) || F.type !== 0 || F.st === 'march' || list.includes(F)) continue; const [lo, hi] = rangeOf(F), d = hexDist(F.cell, c); if (d >= lo && d <= hi) list.push(F); }
         const vis = list.filter(F => !fv || fv[F.cell]).sort((a, b) => hexDist(a.cell, c) - hexDist(b.cell, c)).slice(0, 2);
         const names = vis.map(F => `${pnameB(F.owner)}的${lname(F)}`).join('、');
         if (c === L.cell) t = vis.length ? tr('cutWhyHere', names, L.st === 'march' ? tr('cutMarching') : '') : tr('cutWhyHidden', zoneName(G.zone[c]));       // its own cell is in the enemy's range and none of our infantry covers it
@@ -679,7 +693,7 @@
     if (d === 0) return { d, src, home: true, total: 0 };
     const extra = Math.max(0, Math.ceil(d / 6) - 1), far = d, per = new Map();
     for (const F of G.L) {
-      if (F.dead || F.owner === p || F.type !== 1 || F.st === 'march') continue;
+      if (F.dead || !hostile(F.owner, p) || F.type !== 1 || F.st === 'march') continue;
       const T = typ(F), R = T.rmax + (isCity(F.cell) ? T.cb : 0); let s = 0;
       for (const c of route) { const dd = hexDist(F.cell, c); if (dd >= T.rmin && dd <= R) s += F.n; }
       if (s > 0) per.set(F, s);
@@ -750,7 +764,7 @@
         const slow = Math.ceil(d / 6) - 1 > 0;
         for (let c = L.cell; rr.par[c] >= 0; c = rr.par[c]) {
           const n = rr.par[c], key = c * 65536 + n; if (seen.has(key)) continue; seen.add(key);
-          const hot = cv.artTot[c] - (own ? own[c] : 0) > 0 || cv.artTot[n] - (own ? own[n] : 0) > 0;
+          const hot = foeArt(cv, P.id, c) > 0 || foeArt(cv, P.id, n) > 0;
           // supplies travel from the city (n) to the legion (c)
           (hot ? out.hot : slow ? dashed : solid).push([G.X[n], G.Y[n], G.X[c], G.Y[c]]);
         }
@@ -806,15 +820,15 @@
   function reachCells(L) {
     const key = G.ver + ':' + L.id + ':' + L.cell;
     if (G._rcz && G._rcz.key === key) return G._rcz.path;
-    const cv = cover(), T = typ(L), seen = new Map([[L.cell, 0]]), q = [L.cell], path = new Path2D(), set = new Set([L.cell]);
+    const cv = cover(), T = typ(L), seen = new Map([[L.cell, 0]]), q = [L.cell], path = new Path2D(), set = new Set([L.cell]), foe = foeBits(L.owner);
     for (let h = 0; h < q.length; h++) {
       const u = q[h], dd = seen.get(u); if (dd >= T.budget) continue;
-      if (u !== L.cell && (cv.inf[u] & ~(1 << L.owner)) !== 0) continue;
+      if (u !== L.cell && (cv.inf[u] & foe) !== 0) continue;
       for (let e = 0; e < 6; e++) {
         const v = G.link[u * 6 + e]; if (v < 0 || seen.has(v)) continue;
-        const O = G.lg[v]; if (O && O.owner !== L.owner) continue;
+        const O = G.lg[v]; if (O && !allied(O.owner, L.owner)) continue;
         seen.set(v, dd + 1); q.push(v);
-        if (!O || (O.type === L.type && O.n < T.cap)) { path.addPath(cellPath(v)); set.add(v); }
+        if (!O || (O.owner === L.owner && O.type === L.type && O.n < T.cap)) { path.addPath(cellPath(v)); set.add(v); }
       }
     }
     G._rcz = { key, path, set }; return path;
@@ -923,7 +937,7 @@
     };
     if (SL && !G.over) {
       const [lo, hi] = rangeOf(SL), foeRing = new Path2D();
-      for (const c of within(SL.cell, hi)) if (G.zone[c] >= 0 && hexDist(SL.cell, c) >= lo) { const T = lgAt(c); if (T && T.owner !== SL.owner) foeRing.addPath(cellPath(c)); }
+      for (const c of within(SL.cell, hi)) if (G.zone[c] >= 0 && hexDist(SL.cell, c) >= lo) { const T = lgAt(c); if (T && hostile(T.owner, SL.owner)) foeRing.addPath(cellPath(c)); }
       ctx.strokeStyle = 'rgba(255,90,70,0.95)'; ctx.lineWidth = G.mode === 'attack' ? 3.4 : 2.2; ctx.stroke(foeRing);
       const blink = 0.5 + 0.5 * Math.sin(now / 260);
       const rg = rangeRing(SL);
