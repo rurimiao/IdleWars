@@ -553,6 +553,12 @@
     h += shown.map(r => `<div class="r ${r.id === G.cur ? 'cur' : ''} ${r.a ? '' : 'out'} ${r.id === G.blink ? 'blk' : ''}" data-p="${r.id}"><i style="background:${hue(r.id)}"></i><span>${tag(r.id)}${pname(r.id)}${wide && !G.players[r.id].human && G.aiStyle ? `<small class="sty">${tr('st_' + (G.aiStyle[r.id] || 'balanced'))}</small>` : ''}</span><b>${r.n}</b>`
       + `<b>${q(r.id) || `${r.s.infN}/${r.s.infM}`}</b><b>${q(r.id) || `${r.s.artN}/${r.s.artM}`}</b><b>${q(r.id) || G.players[r.id].stock}</b><b>${q(r.id) || '+' + G.players[r.id].income}</b><b>${q(r.id) || '−' + r.u}</b>`
       + (wide ? `<button class="cb" data-ctl="${r.id}" ${r.a && !G.over ? '' : 'disabled'}>${G.players[r.id].human ? tr('autoPlay') : tr('takeOver')}</button>` + dip(r.id) : '') + `</div>`).join('');
+    if (wide && G.players.length > 2) {       // set the alliances by hand: a tick is an alliance, no consent asked
+      const al = G.order.filter(id => G.players[id].alive), dot = id => `<i style="background:${hue(id)}" title="${pname(id)}"></i>`;
+      h += `<div class="allyx"><div class="t">${tr('dipEdit')}</div><table><tr><th></th>${al.map(id => `<th>${dot(id)}</th>`).join('')}</tr>`
+        + al.map(a => `<tr><th>${dot(a)}<span>${pname(a)}</span></th>${al.map(b => `<td>${a === b ? '' : `<input type="checkbox" data-ax="${a}" data-ay="${b}" ${allied(a, b) ? 'checked' : ''} ${G.over ? 'disabled' : ''}>`}</td>`).join('')}</tr>`).join('')
+        + `</table><div class="s">${tr('dipEditS')}</div></div>`;
+    }
     if (limit) h = h.replace(`<span></span>`, `<span><a href="#" id="natMore">${rows.length > limit ? `${tr('allShort')} +${rows.length - limit}` : tr('colDip')}</a></span>`);       // the link opens the full table, with the diplomacy buttons
     return h;
   }

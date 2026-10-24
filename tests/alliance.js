@@ -47,8 +47,22 @@ const { chromium } = require('playwright');
   if (target) { await p.click(`#natAll button[data-dip="${target[0]}"]`); await p.waitForTimeout(200); click = await p.evaluate(q => ({ note: (document.querySelector('#natAll .dipnote') || {}).textContent, allied: window.__game.allied(window.__game.G.cur, q) }), +target[0]); }
   console.log('click', JSON.stringify(click));
   await p.screenshot({ path: '/tmp/alliance.png' }); await p.keyboard.press('Escape'); await p.waitForTimeout(200); await p.screenshot({ path: '/tmp/alliance_side.png', clip: { x: 990, y: 90, width: 370, height: 180 } });
+  // the hand-set table: tick two computer nations together, untick it again
+  await p.click('#tabPanel'); await p.click('#natMore'); await p.waitForTimeout(200);
+  const mx = await p.evaluate(() => { const d = window.__game, G = d.G, me = G.cur, x = [...document.querySelectorAll('#natAll input[data-ax]')].find(i => +i.dataset.ax !== me && +i.dataset.ay !== me && !i.checked); return x ? [x.dataset.ax, x.dataset.ay, document.querySelectorAll('#natAll input[data-ax]').length] : null; });
+  await p.click(`#natAll input[data-ax="${mx[0]}"][data-ay="${mx[1]}"]`); await p.waitForTimeout(150);
+  const mxOn = await p.evaluate(([a, b]) => window.__game.allied(+a, +b), mx);
+  await p.click(`#natAll input[data-ax="${mx[1]}"][data-ay="${mx[0]}"]`); await p.waitForTimeout(150);
+  const mxOff = await p.evaluate(([a, b]) => !window.__game.allied(+a, +b) && !window.__game.hostile(+a, +b), mx);
+  console.log('hand table', JSON.stringify(mx), 'tick', mxOn, 'untick', mxOff);
+  await p.screenshot({ path: '/tmp/alliance_table.png' }); await p.keyboard.press('Escape');
+  // the whole log and the alliances come back after a reload (the automatic save)
+  const pre = await p.evaluate(() => { const G = window.__game.G; window.__game.autosave(); return { log: G.log.length, ally: JSON.stringify(G.ally) }; });
+  await p.waitForTimeout(500); await p.reload(); await p.waitForFunction(() => !!window.__game.G, null, { timeout: 10000 });
+  const post = await p.evaluate(() => { const G = window.__game.G; return { log: G.log.length, ally: JSON.stringify(G.ally) }; });
+  const reload = pre.log === post.log && pre.ally === post.ally; console.log('reload keeps log and alliances', reload, pre.log, post.log);
   const saved = await p.evaluate(() => { const d = window.__game; const before = JSON.stringify(d.G.ally); d.unpackGame(JSON.parse(JSON.stringify(d.packGame()))); return before === JSON.stringify(d.G.ally); });
-  const pass = !r.fail.length && btn.length === 2 && click && click.allied && /同意/.test(click.note) && saved && !errs.length;
+  const pass = !r.fail.length && btn.length === 2 && click && click.allied && /同意/.test(click.note) && saved && mx && mx[2] === 12 && mxOn && mxOff && reload && !errs.length;
   console.log('save keeps alliances', saved);
   console.log(errs.join('\n') || 'no errors');
   console.log(pass ? '通过' : '失败');

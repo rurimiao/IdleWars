@@ -598,6 +598,8 @@
     const p = +r.dataset.p; G.blink = G.blink === p ? -1 : p; if (!$('modal').hidden) closeModal(); ui(false); requestDraw();
   };
   $('nat').addEventListener('click', pickNation);
+  // the hand-set alliance table in the full nations table
+  document.addEventListener('change', e => { const x = e.target.closest('input[data-ax]'); if (!x || !G) return; setAlly(+x.dataset.ax, +x.dataset.ay, x.checked); G._dipMsg = ''; ui(true); requestDraw(); autosave(); if (!$('modal').hidden) renderModal(); });
   { const lp = document.querySelector('.dp-log'), tb = $('logTop'); lp.addEventListener('scroll', () => { tb.hidden = lp.scrollTop < 120; }); tb.addEventListener('click', () => { lp.scrollTo({ top: 0, behavior: 'smooth' }); }); }
   $('camBtn').addEventListener('click', () => { if (G && G._camOff) { G._camOff = false; G.paused = false; cast(''); ui(true); } });
   $('pauseBtn').addEventListener('click', () => { if (!G || G.over) return; G.paused = !G.paused; if (!G.paused) { cast(''); G._camOff = false; } ui(true); });
@@ -754,6 +756,6 @@
     setLang: l => { lang = l; applyLang(); }, setSpeed: v => { S.speed = String(v); }, screen: i => { const r = cvEl.getBoundingClientRect(); return [r.left + view.cw / 2 + (G.X[i] - view.cx) * view.s, r.top + view.ch / 2 + (G.Y[i] - view.cy) * view.s]; } };
 
   applyParams(); writeForm(); resize(); applyLang();
-  try { if (resumeGame()) applyLang(); else { applyLang(); openNG(); } } catch (e) { console.error(e); }
+  resumeGame().then(ok => { applyLang(); if (!ok) openNG(); }).catch(e => { console.error(e); applyLang(); openNG(); });
 })();
 </script>

@@ -686,6 +686,10 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 .cp .r { grid-template-columns: 14px 1fr 70px 70px 70px; font-size: 14px; }
 .mbody .nat .r { grid-template-columns: 14px 1fr 50px 90px 80px 70px 70px 70px 78px 64px; font-size: 14px; }
 .nat .ally { margin-right: 4px; padding: 0 3px; border-radius: 4px; background: var(--good); color: #fff; font-size: 11px; } .nat .ally i { display: inline-block; width: 7px; height: 7px; margin-left: 2px; border-radius: 50%; border: 1px solid #fff; vertical-align: 0; }
+.nat .allyx { margin-top: 14px; font-size: 13px; } .nat .allyx .t { font-weight: 700; margin-bottom: 4px; } .nat .allyx .s { color: var(--ink-2); margin-top: 4px; }
+.nat .allyx table { border-collapse: collapse; } .nat .allyx th, .nat .allyx td { padding: 3px 6px; text-align: center; font-weight: 400; } .nat .allyx th span { margin-left: 6px; display: inline-block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.nat .allyx i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ink); vertical-align: middle; } .nat .allyx tr th:first-child { text-align: left; }
+#log .cb { font: inherit; font-size: 12px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--ink); cursor: pointer; }
 .nat .cb.dok { border-color: var(--good); color: var(--good); } .nat .cb.dbad { border-color: var(--bad); color: var(--bad); }
 .nat .dipnote { font-size: 13px; padding: 4px 6px; margin-bottom: 4px; border-radius: 6px; background: var(--panel-2); }
 .nat .sty { margin-left: 6px; color: var(--ink-2); font-size: 11px; }
@@ -708,7 +712,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 <div class="wrap">
   <header>
     <div class="hl">
-      <h1><span data-i="title"></span> <small class="ver">v413</small></h1>
+      <h1><span data-i="title"></span> <small class="ver">v414</small></h1>
       <div class="hint" id="hint"><img id="hintImg" alt="" hidden><span id="hintText"></span><span class="widewarn" data-i="wideWarn"></span></div>
     </div>
     <div class="hbtns"><div class="hgrp"><button class="hb hb-cam" id="camBtn"><i></i><span></span></button><span class="hround"><span data-i="turn"></span> <b id="roundNo">1</b></span><button class="hb hb-ff" id="ffBtn" data-i="ffBtn"></button><button class="hb hb-pause" id="pauseBtn"></button></div><div class="hgrp seg"><button class="hb hb-take" id="ctlBtn" data-i="takeOver"></button><button class="hb hb-auto" id="autoBtn" data-i="autoPlay"></button></div><button class="btn alt sm ib" id="bStats" data-it="statsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button><button class="btn alt sm ib" id="bSet" data-it="menuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button class="btn alt sm ib" id="bHelp" data-it="helpTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8"/><path d="M12 17.2h.01"/></svg></button></div>
@@ -1152,10 +1156,10 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       unitNote: '行军按格数算，全图一样。步兵打 1–2 格（大城市里 3 格），炮兵打 2–5 格（大城市里 6 格）；正好 2 格时双方能互打，炮兵只打不到贴身 1 格。炮弹能飞过空洞。',
       winTitle: n => `${n}获胜`, winSub: r => `在第${r}回合成为最后的赢家。`, allDead: '所有真人玩家都被消灭了', loseSub: r => `第${r}回合战败。`,
       tlTitle: n => `${n}以最多的大城市获胜`, tlSub: r => `打满${r}回合后结束：大城市最多者获胜。`, cpFirst: n => `已经大战${n}回合啦`, cpAgain: n => `又大战${n}回合啦`, cpEveryL: '回合提示间隔（回合）', cpSub: '继续打，还是现在结束？选结束，大城市最多的国家获胜。', rNoAp: '这个兵团本回合没有行动点了。', rNotAlert: '只有戒备的兵团能下攻击命令。', rNoTarget: '射程内没有敌军。', rHole: '这是空洞。', rSame: '就在这格。', rNoPath: '走不到：没有路。', rEnemyThere: '敌军占着。', rOtherType: '另一兵种的兵团占着。', rFull: '自己人占着，已经满员。', rNoUnit: '这格没有敌军。', rOwn: '这是你自己的兵团。', rFar: '超出射程。', rClose: '太近，贴身打不了。', turnsN: n => `${n}回合`, stopHere: '在此被拦下', menLost: n => `预计打掉${n}人`, cpCont: '继续', cpEnd: '结束对局', 
-      logRound: n => `第 ${n} 回合开始`,
+      logRound: n => `第 ${n} 回合开始`, logOlder: (n, all) => `再显示 ${n} 条更早的（还剩 ${all} 条）`,
       logAlly: (a, b) => `${pnameB(a)}和${pnameB(b)}结盟了。`, logUnally: (a, b) => `${pnameB(a)}解除了和${pnameB(b)}的联盟，下回合起才能开打。`,
       rAlly: '这是盟友的兵团。', dnAllyB: '盟友之间不开火。要打先在“国家”里解盟，下回合起才能打。', rTruce: '刚解盟，还不能打。', dnTruceB: '解盟后要等到下一回合才能开打。',
-      colDip: '外交', dipAsk: '结盟', dipBreak: '解盟', dipTruce: '停战中', dipAllies: '盟', dipYes: q => `${q}同意结盟。`, dipNo: (q, w) => `${q}拒绝结盟：${w}。`, dipBroke: q => `已和${q}解盟，下回合起才能开打。`,
+      colDip: '外交', dipAsk: '结盟', dipBreak: '解盟', dipTruce: '停战中', dipAllies: '盟', dipEdit: '手动改联盟', dipEditS: '勾上就是盟友，不问对方；取消勾选就是解盟，下回合起才能开打。随时都能改。', dipYes: q => `${q}同意结盟。`, dipNo: (q, w) => `${q}拒绝结盟：${w}。`, dipBroke: q => `已和${q}解盟，下回合起才能开打。`,
       dipTwo: '只剩两家了', dipHate: '恨意太深', dipLead: '它太强了', dipNoFoe: '没有共同的敌人了', dipNoNeed: '现在没有谁强到要联手',
       aiAlly: (q, l) => `和${q}结盟，一起对付${l}`, aiUnally: (q, w) => `和${q}解盟：${w}`,
       logNew: (P, u) => `新游戏：${P}个国家，${u}座大城市。`,
@@ -1191,6 +1195,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
         '>任意两国随时可以结盟或解盟。轮到你时点“结盟”，电脑当场答应或拒绝；点“解盟”立刻生效。',
         '>盟友之间不开火，也不能夺对方的城；视野共享；兵团可以穿过盟友的格子，但不能停在上面。',
         '>解盟后要到下一回合才能开打。',
+        '>整张表下面有“手动改联盟”：随时勾选任意两家，直接结盟或解盟，不问对方。',
         '>只剩两家时联盟没有意义，电脑会解盟。',
         '<b>托管与扮演</b>：',
         '>托管：轮到你时点顶栏“托管”，电脑立刻代打这一回合，之后的回合也由它打。会先问你：保留命令（已下的照常执行，电脑只指挥没动的兵团）还是清空命令。',
@@ -2035,7 +2040,6 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   function logMsg(key, args, p, noFeed) {
     const m = { key, args, p }; G.log.unshift(m);
     if (!noFeed) feedPush(m);
-    if (G.log.length > 1500) G.log.pop();
     renderLog();
     return m;
   }
@@ -2059,14 +2063,20 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (DIR.tab !== 'log') return;
     const pane = ul.parentElement, stick = !pane.dataset.init || pane.scrollTop < 40, oldH = pane.scrollHeight;
     ul.innerHTML = '';
-    for (const m of G.log) {      // newest first: the newest line is at the top; scrolled down, the view stays on what it was showing
+    // the whole log is kept (and saved); the tab draws the newest lines, and a button at the bottom draws the next batch of older ones
+    const show = Math.min(G.log.length, logShow);
+    for (let k = 0; k < show; k++) {      // newest first: the newest line is at the top; scrolled down, the view stays on what it was showing
+      const m = G.log[k];
       const li = document.createElement('li'); if (m.key === 'logRound') li.className = 'rnd'; else if (m.p < 0) li.className = 'sys';
       const sw = document.createElement('i'); sw.style.background = m.p >= 0 ? hue(m.p) : 'transparent';
       const sp = document.createElement('span'); sp.innerHTML = rich(logText(m));
       li.append(sw, sp); ul.appendChild(li);
     }
+    if (show < G.log.length) { const li = document.createElement('li'); li.className = 'sys'; li.innerHTML = `<i></i><span><button class="cb" id="logOlder">${tr('logOlder', Math.min(LOG_PAGE, G.log.length - show), G.log.length - show)}</button></span>`; ul.appendChild(li); }
     if (stick) { pane.scrollTop = 0; pane.dataset.init = '1'; } else pane.scrollTop += pane.scrollHeight - oldH;
   }
+  const LOG_PAGE = 2000; let logShow = LOG_PAGE;
+  document.addEventListener('click', e => { if (e.target.id === 'logOlder') { logShow += LOG_PAGE; renderLogNow(); } });
 
   function mkLegion(owner, type, n, cell, o) {
     const L = { id: G.nid++, no: ++G.seq[owner][type], owner, type, n, cell, st: 'alert', tgt: null, sup: 0, hoard: HOARD_DEFAULT, starve: 0,
@@ -2163,12 +2173,25 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (G.pause && !G.over) showCheckpoint();
     else if (!G.over && !G.players[G.cur].human) runAI();
   }
+  // the automatic save goes to the browser's database (room for a long game with its whole log), and also to localStorage while it fits there
+  // (a copy that no longer fits is removed, so an old one is never resumed)
+  let idbP = null;
+  function idb() {
+    if (!idbP) idbP = new Promise((ok, no) => { try { const r = indexedDB.open('idlewars', 1); r.onupgradeneeded = () => r.result.createObjectStore('save'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } });
+    return idbP;
+  }
+  const idbDo = (mode, fn) => idb().then(db => new Promise((ok, no) => { const t = db.transaction('save', mode), q = fn(t.objectStore('save')); t.oncomplete = () => ok(q && q.result); t.onerror = () => no(t.error); }));
   function autosave() {
     if (!G) return;
-    try { if (G.over) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, JSON.stringify(packGame())); } catch (e) { /* storage full or blocked: the file save still works */ }
+    const txt = G.over ? null : JSON.stringify(packGame());
+    idbDo('readwrite', s => txt ? s.put(txt, SAVE_KEY) : s.delete(SAVE_KEY)).catch(() => {});
+    try { if (!txt) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, txt); } catch (e) { try { localStorage.removeItem(SAVE_KEY); } catch (e2) {} }
   }
-  function resumeGame() {
-    try { const t = localStorage.getItem(SAVE_KEY); if (!t) return false; unpackGame(JSON.parse(t)); return true; } catch (e) { console.error(e); try { localStorage.removeItem(SAVE_KEY); } catch (e2) {} G = null; return false; }
+  async function resumeGame() {
+    let t = null;
+    try { t = await idbDo('readonly', s => s.get(SAVE_KEY)); } catch (e) { /* no database: fall back to localStorage */ }
+    try { if (!t) t = localStorage.getItem(SAVE_KEY); } catch (e) {}
+    try { if (!t) return false; unpackGame(JSON.parse(t)); return true; } catch (e) { console.error(e); try { localStorage.removeItem(SAVE_KEY); } catch (e2) {} idbDo('readwrite', s => s.delete(SAVE_KEY)).catch(() => {}); G = null; return false; }
   }
   function newGame() {
     readForm();
@@ -4122,6 +4145,12 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     h += shown.map(r => `<div class="r ${r.id === G.cur ? 'cur' : ''} ${r.a ? '' : 'out'} ${r.id === G.blink ? 'blk' : ''}" data-p="${r.id}"><i style="background:${hue(r.id)}"></i><span>${tag(r.id)}${pname(r.id)}${wide && !G.players[r.id].human && G.aiStyle ? `<small class="sty">${tr('st_' + (G.aiStyle[r.id] || 'balanced'))}</small>` : ''}</span><b>${r.n}</b>`
       + `<b>${q(r.id) || `${r.s.infN}/${r.s.infM}`}</b><b>${q(r.id) || `${r.s.artN}/${r.s.artM}`}</b><b>${q(r.id) || G.players[r.id].stock}</b><b>${q(r.id) || '+' + G.players[r.id].income}</b><b>${q(r.id) || '−' + r.u}</b>`
       + (wide ? `<button class="cb" data-ctl="${r.id}" ${r.a && !G.over ? '' : 'disabled'}>${G.players[r.id].human ? tr('autoPlay') : tr('takeOver')}</button>` + dip(r.id) : '') + `</div>`).join('');
+    if (wide && G.players.length > 2) {       // set the alliances by hand: a tick is an alliance, no consent asked
+      const al = G.order.filter(id => G.players[id].alive), dot = id => `<i style="background:${hue(id)}" title="${pname(id)}"></i>`;
+      h += `<div class="allyx"><div class="t">${tr('dipEdit')}</div><table><tr><th></th>${al.map(id => `<th>${dot(id)}</th>`).join('')}</tr>`
+        + al.map(a => `<tr><th>${dot(a)}<span>${pname(a)}</span></th>${al.map(b => `<td>${a === b ? '' : `<input type="checkbox" data-ax="${a}" data-ay="${b}" ${allied(a, b) ? 'checked' : ''} ${G.over ? 'disabled' : ''}>`}</td>`).join('')}</tr>`).join('')
+        + `</table><div class="s">${tr('dipEditS')}</div></div>`;
+    }
     if (limit) h = h.replace(`<span></span>`, `<span><a href="#" id="natMore">${rows.length > limit ? `${tr('allShort')} +${rows.length - limit}` : tr('colDip')}</a></span>`);       // the link opens the full table, with the diplomacy buttons
     return h;
   }
@@ -5612,6 +5641,8 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const p = +r.dataset.p; G.blink = G.blink === p ? -1 : p; if (!$('modal').hidden) closeModal(); ui(false); requestDraw();
   };
   $('nat').addEventListener('click', pickNation);
+  // the hand-set alliance table in the full nations table
+  document.addEventListener('change', e => { const x = e.target.closest('input[data-ax]'); if (!x || !G) return; setAlly(+x.dataset.ax, +x.dataset.ay, x.checked); G._dipMsg = ''; ui(true); requestDraw(); autosave(); if (!$('modal').hidden) renderModal(); });
   { const lp = document.querySelector('.dp-log'), tb = $('logTop'); lp.addEventListener('scroll', () => { tb.hidden = lp.scrollTop < 120; }); tb.addEventListener('click', () => { lp.scrollTo({ top: 0, behavior: 'smooth' }); }); }
   $('camBtn').addEventListener('click', () => { if (G && G._camOff) { G._camOff = false; G.paused = false; cast(''); ui(true); } });
   $('pauseBtn').addEventListener('click', () => { if (!G || G.over) return; G.paused = !G.paused; if (!G.paused) { cast(''); G._camOff = false; } ui(true); });
@@ -5768,6 +5799,6 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     setLang: l => { lang = l; applyLang(); }, setSpeed: v => { S.speed = String(v); }, screen: i => { const r = cvEl.getBoundingClientRect(); return [r.left + view.cw / 2 + (G.X[i] - view.cx) * view.s, r.top + view.ch / 2 + (G.Y[i] - view.cy) * view.s]; } };
 
   applyParams(); writeForm(); resize(); applyLang();
-  try { if (resumeGame()) applyLang(); else { applyLang(); openNG(); } } catch (e) { console.error(e); }
+  resumeGame().then(ok => { applyLang(); if (!ok) openNG(); }).catch(e => { console.error(e); applyLang(); openNG(); });
 })();
 </script>

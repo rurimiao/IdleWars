@@ -137,7 +137,6 @@
   function logMsg(key, args, p, noFeed) {
     const m = { key, args, p }; G.log.unshift(m);
     if (!noFeed) feedPush(m);
-    if (G.log.length > 1500) G.log.pop();
     renderLog();
     return m;
   }
@@ -161,14 +160,20 @@
     if (DIR.tab !== 'log') return;
     const pane = ul.parentElement, stick = !pane.dataset.init || pane.scrollTop < 40, oldH = pane.scrollHeight;
     ul.innerHTML = '';
-    for (const m of G.log) {      // newest first: the newest line is at the top; scrolled down, the view stays on what it was showing
+    // the whole log is kept (and saved); the tab draws the newest lines, and a button at the bottom draws the next batch of older ones
+    const show = Math.min(G.log.length, logShow);
+    for (let k = 0; k < show; k++) {      // newest first: the newest line is at the top; scrolled down, the view stays on what it was showing
+      const m = G.log[k];
       const li = document.createElement('li'); if (m.key === 'logRound') li.className = 'rnd'; else if (m.p < 0) li.className = 'sys';
       const sw = document.createElement('i'); sw.style.background = m.p >= 0 ? hue(m.p) : 'transparent';
       const sp = document.createElement('span'); sp.innerHTML = rich(logText(m));
       li.append(sw, sp); ul.appendChild(li);
     }
+    if (show < G.log.length) { const li = document.createElement('li'); li.className = 'sys'; li.innerHTML = `<i></i><span><button class="cb" id="logOlder">${tr('logOlder', Math.min(LOG_PAGE, G.log.length - show), G.log.length - show)}</button></span>`; ul.appendChild(li); }
     if (stick) { pane.scrollTop = 0; pane.dataset.init = '1'; } else pane.scrollTop += pane.scrollHeight - oldH;
   }
+  const LOG_PAGE = 2000; let logShow = LOG_PAGE;
+  document.addEventListener('click', e => { if (e.target.id === 'logOlder') { logShow += LOG_PAGE; renderLogNow(); } });
 
   function mkLegion(owner, type, n, cell, o) {
     const L = { id: G.nid++, no: ++G.seq[owner][type], owner, type, n, cell, st: 'alert', tgt: null, sup: 0, hoard: HOARD_DEFAULT, starve: 0,
@@ -265,12 +270,25 @@
     if (G.pause && !G.over) showCheckpoint();
     else if (!G.over && !G.players[G.cur].human) runAI();
   }
+  // the automatic save goes to the browser's database (room for a long game with its whole log), and also to localStorage while it fits there
+  // (a copy that no longer fits is removed, so an old one is never resumed)
+  let idbP = null;
+  function idb() {
+    if (!idbP) idbP = new Promise((ok, no) => { try { const r = indexedDB.open('idlewars', 1); r.onupgradeneeded = () => r.result.createObjectStore('save'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } });
+    return idbP;
+  }
+  const idbDo = (mode, fn) => idb().then(db => new Promise((ok, no) => { const t = db.transaction('save', mode), q = fn(t.objectStore('save')); t.oncomplete = () => ok(q && q.result); t.onerror = () => no(t.error); }));
   function autosave() {
     if (!G) return;
-    try { if (G.over) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, JSON.stringify(packGame())); } catch (e) { /* storage full or blocked: the file save still works */ }
+    const txt = G.over ? null : JSON.stringify(packGame());
+    idbDo('readwrite', s => txt ? s.put(txt, SAVE_KEY) : s.delete(SAVE_KEY)).catch(() => {});
+    try { if (!txt) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, txt); } catch (e) { try { localStorage.removeItem(SAVE_KEY); } catch (e2) {} }
   }
-  function resumeGame() {
-    try { const t = localStorage.getItem(SAVE_KEY); if (!t) return false; unpackGame(JSON.parse(t)); return true; } catch (e) { console.error(e); try { localStorage.removeItem(SAVE_KEY); } catch (e2) {} G = null; return false; }
+  async function resumeGame() {
+    let t = null;
+    try { t = await idbDo('readonly', s => s.get(SAVE_KEY)); } catch (e) { /* no database: fall back to localStorage */ }
+    try { if (!t) t = localStorage.getItem(SAVE_KEY); } catch (e) {}
+    try { if (!t) return false; unpackGame(JSON.parse(t)); return true; } catch (e) { console.error(e); try { localStorage.removeItem(SAVE_KEY); } catch (e2) {} idbDo('readwrite', s => s.delete(SAVE_KEY)).catch(() => {}); G = null; return false; }
   }
   function newGame() {
     readForm();
