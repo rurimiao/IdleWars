@@ -690,6 +690,10 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 .nat .allyx table { border-collapse: collapse; } .nat .allyx th, .nat .allyx td { padding: 3px 6px; text-align: center; font-weight: 400; } .nat .allyx th span { margin-left: 6px; display: inline-block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
 .nat .allyx i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ink); vertical-align: middle; } .nat .allyx tr th:first-child { text-align: left; }
 #log .cb { font: inherit; font-size: 12px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--ink); cursor: pointer; }
+.mgbusy { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); } .mgbusy[hidden] { display: none; }
+.mgbusy .box { width: min(360px, calc(100vw - 32px)); padding: 16px 18px; border-radius: 12px; background: var(--panel); color: var(--ink); box-shadow: 0 8px 30px rgba(0,0,0,0.35); display: grid; gap: 8px; font-size: 14px; }
+.mgbusy .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; } .mgbusy .bar i { display: block; height: 100%; width: 0; background: var(--good); transition: width 0.1s; }
+.mgbusy .n { color: var(--ink-2); font-size: 12px; }
 .nat .cb.dok { border-color: var(--good); color: var(--good); } .nat .cb.dbad { border-color: var(--bad); color: var(--bad); }
 .nat .dipnote { font-size: 13px; padding: 4px 6px; margin-bottom: 4px; border-radius: 6px; background: var(--panel-2); }
 .nat .sty { margin-left: 6px; color: var(--ink-2); font-size: 11px; }
@@ -712,7 +716,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
 <div class="wrap">
   <header>
     <div class="hl">
-      <h1><span data-i="title"></span> <small class="ver">v415</small></h1>
+      <h1><span data-i="title"></span> <small class="ver">v416</small></h1>
       <div class="hint" id="hint"><img id="hintImg" alt="" hidden><span id="hintText"></span><span class="widewarn" data-i="wideWarn"></span></div>
     </div>
     <div class="hbtns"><div class="hgrp"><button class="hb hb-cam" id="camBtn"><i></i><span></span></button><span class="hround"><span data-i="turn"></span> <b id="roundNo">1</b></span><button class="hb hb-ff" id="ffBtn" data-i="ffBtn"></button><button class="hb hb-pause" id="pauseBtn"></button></div><div class="hgrp seg"><button class="hb hb-take" id="ctlBtn" data-i="takeOver"></button><button class="hb hb-auto" id="autoBtn" data-i="autoPlay"></button></div><button class="btn alt sm ib" id="bStats" data-it="statsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button><button class="btn alt sm ib" id="bSet" data-it="menuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button class="btn alt sm ib" id="bHelp" data-it="helpTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.8"/><path d="M12 17.2h.01"/></svg></button></div>
@@ -971,7 +975,7 @@ input.num { width: 90px; text-align: right; background: var(--panel-2); border: 
         '<b>固守</b>：不主动去打别人的城。',
         '>野战兵力退回城里修城防；谁打了它，它会就近还手。',
         '<b>新游戏面板</b>：每家一行选风格；下面的按钮能一次设成全部某一种，或给每家随机抽一种。',
-        '>地图：每家一块扇形，有“每家大区数”个大区，绕中心复制，各家一模一样；相邻两家之间是一道空洞墙（墙图上各家和中间之间还隔着一层中立大区），或两层中立大区（6 家以上的较窄）；中间是公共区（人数÷2 个大区，奇数人数每家对着一个）。',
+        '>地图：每家一块扇形，有“每家大区数”个大区，绕中心复制，各家一模一样；相邻两家之间是一道空洞墙（墙图上各家和中间之间还隔着一层中立大区），或两层中立大区（6 家以上的较窄）；中间是公共区（人数÷2 个大区，奇数人数每家对着一个）。生成要一会儿时会弹出进度条，写明正在做哪一步、已经重来了几次。',
         '>“换一张”重新随机；“存下来”把这张存在浏览器里，以后点小图就能再用；“空洞”管小空洞多少。',
         '<b>两个多变开关</b>：每家单独开关，默认都开，名字后面会写出来，例如“稳健+动态多变+局势多变”。',
         '>动态多变：每 10 回合重抽一次风格。',
@@ -1156,6 +1160,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       unitNote: '行军按格数算，全图一样。步兵打 1–2 格（大城市里 3 格），炮兵打 2–5 格（大城市里 6 格）；正好 2 格时双方能互打，炮兵只打不到贴身 1 格。炮弹能飞过空洞。',
       winTitle: n => `${n}获胜`, winSub: r => `在第${r}回合成为最后的赢家。`, allDead: '所有真人玩家都被消灭了', loseSub: r => `第${r}回合战败。`,
       tlTitle: n => `${n}以最多的大城市获胜`, tlSub: r => `打满${r}回合后结束：大城市最多者获胜。`, cpFirst: n => `已经大战${n}回合啦`, cpAgain: n => `又大战${n}回合啦`, cpEveryL: '回合提示间隔（回合）', cpSub: '继续打，还是现在结束？选结束，大城市最多的国家获胜。', rNoAp: '这个兵团本回合没有行动点了。', rNotAlert: '只有戒备的兵团能下攻击命令。', rNoTarget: '射程内没有敌军。', rHole: '这是空洞。', rSame: '就在这格。', rNoPath: '走不到：没有路。', rEnemyThere: '敌军占着。', rOtherType: '另一兵种的兵团占着。', rFull: '自己人占着，已经满员。', rNoUnit: '这格没有敌军。', rOwn: '这是你自己的兵团。', rFar: '超出射程。', rClose: '太近，贴身打不了。', turnsN: n => `${n}回合`, stopHere: '在此被拦下', menLost: n => `预计打掉${n}人`, cpCont: '继续', cpEnd: '结束对局', 
+      mgTitle: (P, n) => `正在生成地图：${P} 家，每家 ${n} 个大区`, mgStep: (a, s) => `第 ${a} 次尝试：${s}`, mgTally: s => `已重来：${s}`, mgRim: '定扇形大小', mgHoles: '撒空洞', mgCells: '铺格子', mgZones: '划大区', mgFair: '检查各家是否一样大', mgSmall: '有大区太小', mgUnfair: '各家不一样大',
       logRound: n => `第 ${n} 回合开始`, logOlder: (n, all) => `再显示 ${n} 条更早的（还剩 ${all} 条）`,
       logAlly: (a, b) => `${pnameB(a)}和${pnameB(b)}结盟了。`, logUnally: (a, b) => `${pnameB(a)}解除了和${pnameB(b)}的联盟，下回合起才能开打。`,
       rAlly: '这是盟友的兵团。', dnAllyB: '盟友之间不开火。要打先在“国家”里解盟，下回合起才能打。', rTruce: '刚解盟，还不能打。', dnTruceB: '解盟后要等到下一回合才能开打。',
@@ -1774,7 +1779,14 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   // On wall maps a layer of neutral zones lies between each nation's home ground and the common ground.
   // Even P mirror every other wedge (exact for 2, 4 and 6 nations on the hex grid), odd P turn it (exact for 3); 5, 7 and 8 come out nearly equal.
   const ZONE_CELLS = 25;
-  function genSymWorld(P, n = 6, opt = {}) {       // opt.edge: 'wall' or 'band' (picked at random when absent); opt.holes: how many small holes (1 = normal)
+  // the same, all at once (genSymSteps yields after each step so that the panel can show how far it got)
+  function genSymWorld(P, n = 6, opt = {}) { const it = genSymSteps(P, n, opt); for (;;) { const r = it.next(); if (r.done) return r.value; } }
+  // a step at a time, letting the page draw between steps: onStep({ a: attempt, s: step text key, f: share of the attempt done, fail: why the last attempt was thrown away })
+  async function genSymAsync(P, n, opt, onStep) {
+    const it = genSymSteps(P, n, opt); let t0 = performance.now();
+    for (;;) { const r = it.next(); if (r.done) return r.value; onStep(r.value); if (performance.now() - t0 > 30) { await new Promise(ok => setTimeout(ok, 0)); t0 = performance.now(); } }
+  }
+  function* genSymSteps(P, n = 6, opt = {}) {       // opt.edge: 'wall' or 'band' (picked at random when absent); opt.holes: how many small holes (1 = normal)
     const why = opt.why || (() => {}), holes = opt.holes ?? 1, edge = opt.edge || (Math.random() < 0.5 ? 'wall' : 'band');
     const th = 2 * Math.PI / P, even = P % 2 === 0, f0 = P === 2 ? -Math.PI / 2 : 0, AZ = ZONE_CELLS * SQ / 2;
     const rot = (a, x, y) => { const c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; };
@@ -1794,7 +1806,9 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     const W = P >= 7 ? 3 : P >= 6 ? 3.4 : 4.6, WALL = 1.6, Rc = Math.sqrt(P / 2 * AZ / 0.72 / Math.PI) + 0.8;       // with 6 to 8 nations the border layers are narrower, so there are not more neutral zones than home zones
     const FRONT = Math.max(3, Math.sqrt(Rc * Rc + 2 * AZ / th) - Rc);       // wall maps: a layer of neutral ground (about one zone) between the home ground and the common ground
     // region of a nation-0 point: -1 hole, 0 home, 1/2 border layer at the first/second edge, 3 common ground
+    let fail = '';
     for (let attempt = 0; attempt < 400; attempt++) {
+      yield { a: attempt + 1, s: 'mgRim', f: 0, fail };
       const rimW = [1, 2, 3].map(m => ({ m, a: (Math.random() - 0.5) * 0.08 })), rimAt = a => 1 + rimW.reduce((s, w) => s + w.a * Math.cos(2 * Math.PI * w.m * a / th), 0);
       const blobs = [], lake = Rc * (0.25 + Math.random() * 0.2);
       const region = (x, y, Ro) => {
@@ -1809,12 +1823,14 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       // the wedge radius that gives n home zones
       const cellsOf = Ro => { let k = 0; const R = Math.ceil(Ro * 1.1) + 2; for (let dr = -R; dr <= R; dr++) for (let dq = -2 * R; dq <= 2 * R; dq++) { const x = dq + dr / 2, y = dr * SQ / 2; if (Math.hypot(x, y) > Ro * 1.1) continue; const F = fold(x, y); if (F.g === 0 && region(F.x, F.y, Ro) === 0) k++; } return k; };
       let lo = Rc + 3, hi = Rc + 60;
-      for (let it = 0; it < 18; it++) { const mid = (lo + hi) / 2; if (cellsOf(mid) < n * ZONE_CELLS) lo = mid; else hi = mid; }
+      for (let it = 0; it < 18; it++) { const mid = (lo + hi) / 2; if (cellsOf(mid) < n * ZONE_CELLS) lo = mid; else hi = mid; yield { a: attempt + 1, s: 'mgRim', f: (it + 1) / 18 * 0.4, fail }; }
+      yield { a: attempt + 1, s: 'mgHoles', f: 0.42, fail };
       const Ro = hi;
       // small holes in the home ground and border layers, a few in the common ground
       const nb = Math.round(n * 0.5 * holes);
       for (let t = 0, k = 0; t < 200 && k < nb; t++) { const r = Rc + 1.5 + Math.random() * (Ro - Rc - 2), a = f0 + Math.random() * th; blobs.push([r * Math.cos(a), r * Math.sin(a), 0.7 + Math.random() * 0.6]); k++; }
       for (let k = 0; k < (holes > 0 ? 1 : 0) + (Math.random() < 0.5 ? 1 : 0); k++) { const r = lake + Math.random() * (Rc - lake), a = f0 + Math.random() * th; blobs.push([r * Math.cos(a), r * Math.sin(a), 0.8 + Math.random() * 0.9]); }
+      yield { a: attempt + 1, s: 'mgCells', f: 0.5, fail };
       const R1 = Ro * 1.1 + 2, cols = Math.ceil(2 * R1 + 3), rows = Math.ceil(2 * R1 / (SQ / 2) + 3) | 1;
       setGrid(cols, rows); buildCoords();
       const total = COLS * ROWS, ci = idx(cols >> 1, rows >> 1);
@@ -1837,6 +1853,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
         }
         return s;
       };
+      yield { a: attempt + 1, s: 'mgZones', f: 0.6, fail };
       const sd = [lloyd(base[0], n), lloyd(base[1], Math.max(1, Math.round(base[1].length / ZONE_CELLS))), lloyd(base[2], Math.max(1, Math.round(base[2].length / ZONE_CELLS)))];
       // zones: nation g's copy of each seed; the common ground is one zone per two nations (or one for all)
       const key = new Map(), zh = [], zone = new Int16Array(total).fill(-1), isLand = new Uint8Array(total);
@@ -1858,11 +1875,12 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
       const cc = landComponents(isLand, total), big = cc.list.reduce((a, b) => (b.length > a.length ? b : a), []);
       for (const l of cc.list) if (l !== big) for (const i of l) isLand[i] = 0;
       const cnt = new Int32Array(zh.length); for (let i = 0; i < total; i++) if (isLand[i]) cnt[zone[i]]++; else zone[i] = -1;
-      if (zh.some((h, z) => cnt[z] < (h >= 0 ? 14 : 8))) { why('small'); continue; }
+      if (zh.some((h, z) => cnt[z] < (h >= 0 ? 14 : 8))) { why('small'); fail = 'mgSmall'; continue; }
+      yield { a: attempt + 1, s: 'mgFair', f: 0.85, fail };
       const land = []; for (let i = 0; i < total; i++) if (isLand[i]) land.push(i);
       const { Z, phys } = makeZones(zh.length, zone, isLand, X, Y, land), owner = new Int16Array(total).fill(-1);
       Z.forEach((z, k) => { z.out = ZONE_OUT; if (zh[k] >= 0) { z.holder = zh[k]; z.home = zh[k]; for (const c of z.cells) owner[c] = zh[k]; } });
-      if (!symFair(Z, P, n, why)) { why('fair'); continue; }
+      if (!symFair(Z, P, n, why)) { why('fair'); fail = 'mgUnfair'; continue; }
       return { Z, zone, phys, link: Int32Array.from(phys), X, Y, land, owner, gap: narrowGaps(isLand, land, X, Y, total), K: n, gapZ: 1, edge };
     }
     throw new Error('symmetric map generation failed');
@@ -5575,8 +5593,35 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
     if (W < 100) return;
     for (const [z, t] of sum) { if (m.home[z] < 0) continue; const cx = t[0] / t[2], cy = t[1] / t[2]; let b = t[3][0], bd = 1e9; for (const q of t[3]) { const d = (q[0] - cx) ** 2 + (q[1] - cy) ** 2; if (d < bd) { bd = d; b = q; } } ctx.beginPath(); ctx.arc(b[0], b[1], Math.max(1.5, s * 0.7), 0, 6.283); ctx.fill(); }
   }
+  // making a map can take a second or two: it runs a step at a time behind a box with a progress bar and the step it is on (shown only when it takes a while)
+  let ngTok = 0;
+  function ngBusyBox() {
+    let el = $('ngBusy');
+    if (!el) { el = document.createElement('div'); el.id = 'ngBusy'; el.className = 'mgbusy'; el.hidden = true; el.innerHTML = `<div class="box"><b></b><div class="bar"><i></i></div><span class="t"></span><span class="n"></span></div>`; document.body.appendChild(el); }
+    return el;
+  }
+  async function ngMake() {
+    const { P, n } = ngForm(), tok = ++ngTok, el = ngBusyBox(), STOP = {}, tally = {};
+    let lastA = 0, lastFail = '';
+    const show = setTimeout(() => { if (tok === ngTok) el.hidden = false; }, 150);
+    el.querySelector('b').textContent = tr('mgTitle', P, n); $('newBtn').disabled = true;
+    try {
+      const g = await genSymAsync(P, n, { holes: HOLES[$('sObs').value] ?? 1 }, st => {
+        if (tok !== ngTok) throw STOP;       // a newer request took over
+        if (st.a !== lastA) { if (st.fail && lastA) tally[st.fail] = (tally[st.fail] || 0) + 1; lastA = st.a; lastFail = st.fail; }
+        el.querySelector('.bar i').style.width = Math.round(st.f * 100) + '%';
+        el.querySelector('.t').textContent = tr('mgStep', st.a, tr(st.s));
+        el.querySelector('.n').textContent = Object.keys(tally).length ? tr('mgTally', Object.entries(tally).map(([k, v]) => tr(k) + ' ' + v + ' 次').join('，')) : '';
+      });
+      if (tok !== ngTok) return;
+      NGcur = { P, ...packMap(g) };
+    } catch (e) { if (e !== STOP) throw e; return; }
+    finally { if (tok === ngTok) { clearTimeout(show); el.hidden = true; $('newBtn').disabled = false; } }
+    renderMaps();
+  }
   function renderMaps() {
-    const m = ngMapNow(), list = savedMaps().map((x, i) => [x, i]).filter(([x]) => x.P === m.P), has = list.some(([x]) => x.zones === m.zones);
+    { const { P, n } = ngForm(); if (!NGcur || NGcur.P !== P || NGcur.k !== n) { ngMake(); return; } }
+    const m = NGcur, list = savedMaps().map((x, i) => [x, i]).filter(([x]) => x.P === m.P), has = list.some(([x]) => x.zones === m.zones);
     $('ngMaps').innerHTML = `<canvas class="big" title="${tr('ngMapTip')}"></canvas><div class="side"><span class="note">${tr('ngEdge_' + (m.edge || 'wall'))}</span>`
       + `<button class="btn sm" data-ngnew>${tr('ngMapNew')}</button><button class="btn alt sm" data-ngsave ${has ? 'disabled' : ''}>${tr('ngMapSave')}</button>`
       + (list.length ? `<span class="note">${tr('ngMapSaved')}</span><div class="saved">${list.map(([x, i]) => `<button class="btn alt sv ${x.zones === m.zones ? 'on' : ''}" data-ngpick="${i}"><canvas></canvas><span class="x" data-ngdel="${i}" title="${tr('ngMapDel')}">✕</span></button>`).join('')}</div>` : '') + `</div>`;
@@ -5798,7 +5843,7 @@ tabLines: '地图线条', helpSym: '符号和色彩',  lnG1: '选中兵团时', 
   new ResizeObserver(resize).observe($('boardWrap'));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => requestDraw());
   new MutationObserver(() => requestDraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.__game = { setAlly, allied, hostile, canTake, askAlly, aiDiplo, leaderOf, targetsIn, dipClick, genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
+  window.__game = { genSymAsync, setAlly, allied, hostile, canTake, askAlly, aiDiplo, leaderOf, targetsIn, dipClick, genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
     setLang: l => { lang = l; applyLang(); }, setSpeed: v => { S.speed = String(v); }, screen: i => { const r = cvEl.getBoundingClientRect(); return [r.left + view.cw / 2 + (G.X[i] - view.cx) * view.s, r.top + view.ch / 2 + (G.Y[i] - view.cy) * view.s]; } };
 
   applyParams(); writeForm(); resize(); applyLang();

@@ -529,8 +529,35 @@
     if (W < 100) return;
     for (const [z, t] of sum) { if (m.home[z] < 0) continue; const cx = t[0] / t[2], cy = t[1] / t[2]; let b = t[3][0], bd = 1e9; for (const q of t[3]) { const d = (q[0] - cx) ** 2 + (q[1] - cy) ** 2; if (d < bd) { bd = d; b = q; } } ctx.beginPath(); ctx.arc(b[0], b[1], Math.max(1.5, s * 0.7), 0, 6.283); ctx.fill(); }
   }
+  // making a map can take a second or two: it runs a step at a time behind a box with a progress bar and the step it is on (shown only when it takes a while)
+  let ngTok = 0;
+  function ngBusyBox() {
+    let el = $('ngBusy');
+    if (!el) { el = document.createElement('div'); el.id = 'ngBusy'; el.className = 'mgbusy'; el.hidden = true; el.innerHTML = `<div class="box"><b></b><div class="bar"><i></i></div><span class="t"></span><span class="n"></span></div>`; document.body.appendChild(el); }
+    return el;
+  }
+  async function ngMake() {
+    const { P, n } = ngForm(), tok = ++ngTok, el = ngBusyBox(), STOP = {}, tally = {};
+    let lastA = 0, lastFail = '';
+    const show = setTimeout(() => { if (tok === ngTok) el.hidden = false; }, 150);
+    el.querySelector('b').textContent = tr('mgTitle', P, n); $('newBtn').disabled = true;
+    try {
+      const g = await genSymAsync(P, n, { holes: HOLES[$('sObs').value] ?? 1 }, st => {
+        if (tok !== ngTok) throw STOP;       // a newer request took over
+        if (st.a !== lastA) { if (st.fail && lastA) tally[st.fail] = (tally[st.fail] || 0) + 1; lastA = st.a; lastFail = st.fail; }
+        el.querySelector('.bar i').style.width = Math.round(st.f * 100) + '%';
+        el.querySelector('.t').textContent = tr('mgStep', st.a, tr(st.s));
+        el.querySelector('.n').textContent = Object.keys(tally).length ? tr('mgTally', Object.entries(tally).map(([k, v]) => tr(k) + ' ' + v + ' 次').join('，')) : '';
+      });
+      if (tok !== ngTok) return;
+      NGcur = { P, ...packMap(g) };
+    } catch (e) { if (e !== STOP) throw e; return; }
+    finally { if (tok === ngTok) { clearTimeout(show); el.hidden = true; $('newBtn').disabled = false; } }
+    renderMaps();
+  }
   function renderMaps() {
-    const m = ngMapNow(), list = savedMaps().map((x, i) => [x, i]).filter(([x]) => x.P === m.P), has = list.some(([x]) => x.zones === m.zones);
+    { const { P, n } = ngForm(); if (!NGcur || NGcur.P !== P || NGcur.k !== n) { ngMake(); return; } }
+    const m = NGcur, list = savedMaps().map((x, i) => [x, i]).filter(([x]) => x.P === m.P), has = list.some(([x]) => x.zones === m.zones);
     $('ngMaps').innerHTML = `<canvas class="big" title="${tr('ngMapTip')}"></canvas><div class="side"><span class="note">${tr('ngEdge_' + (m.edge || 'wall'))}</span>`
       + `<button class="btn sm" data-ngnew>${tr('ngMapNew')}</button><button class="btn alt sm" data-ngsave ${has ? 'disabled' : ''}>${tr('ngMapSave')}</button>`
       + (list.length ? `<span class="note">${tr('ngMapSaved')}</span><div class="saved">${list.map(([x, i]) => `<button class="btn alt sv ${x.zones === m.zones ? 'on' : ''}" data-ngpick="${i}"><canvas></canvas><span class="x" data-ngdel="${i}" title="${tr('ngMapDel')}">✕</span></button>`).join('')}</div>` : '') + `</div>`;
@@ -752,7 +779,7 @@
   new ResizeObserver(resize).observe($('boardWrap'));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => requestDraw());
   new MutationObserver(() => requestDraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.__game = { setAlly, allied, hostile, canTake, askAlly, aiDiplo, leaderOf, targetsIn, dipClick, genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
+  window.__game = { genSymAsync, setAlly, allied, hostile, canTake, askAlly, aiDiplo, leaderOf, targetsIn, dipClick, genSymWorld, ngMapNow, makeZones, packMap, loadMap, attackNow, cpMax, cpUsed, cpLeft, cover, isCity, cutReason, reachOf, zoneLines, todoData, cancelOrder, cancelBuild, get G() { return G; }, hexDist, supplyHTML, supplyOf, S: () => S, ui, orderMarch, orderAttack, orderStrike, vertexCells, supplyViz, deny, whyMarch, whySplit, orderRepair, capture, visMask, logText, SAMPLES, marchLegion, checkpointGo, showCheckpoint, setControl, cityRoom, packGame, unpackGame, autosave, resumeGame, cities, V, supplyViz, aiProduce, AIK, citySupplied, validTarget, typ, supCost, spawn, fireRound, stepMarch, buyOK, cityRoomParts, view, TYPES, endTurn, doEndTurn, aiTurn, orderBuildUnits, orderSplit, reachOf, cover, planRoute, hitRate, targetsIn, hexDist, within, newGame, stats, economy, cityRoom,
     setLang: l => { lang = l; applyLang(); }, setSpeed: v => { S.speed = String(v); }, screen: i => { const r = cvEl.getBoundingClientRect(); return [r.left + view.cw / 2 + (G.X[i] - view.cx) * view.s, r.top + view.ch / 2 + (G.Y[i] - view.cy) * view.s]; } };
 
   applyParams(); writeForm(); resize(); applyLang();

@@ -53,7 +53,14 @@
   // On wall maps a layer of neutral zones lies between each nation's home ground and the common ground.
   // Even P mirror every other wedge (exact for 2, 4 and 6 nations on the hex grid), odd P turn it (exact for 3); 5, 7 and 8 come out nearly equal.
   const ZONE_CELLS = 25;
-  function genSymWorld(P, n = 6, opt = {}) {       // opt.edge: 'wall' or 'band' (picked at random when absent); opt.holes: how many small holes (1 = normal)
+  // the same, all at once (genSymSteps yields after each step so that the panel can show how far it got)
+  function genSymWorld(P, n = 6, opt = {}) { const it = genSymSteps(P, n, opt); for (;;) { const r = it.next(); if (r.done) return r.value; } }
+  // a step at a time, letting the page draw between steps: onStep({ a: attempt, s: step text key, f: share of the attempt done, fail: why the last attempt was thrown away })
+  async function genSymAsync(P, n, opt, onStep) {
+    const it = genSymSteps(P, n, opt); let t0 = performance.now();
+    for (;;) { const r = it.next(); if (r.done) return r.value; onStep(r.value); if (performance.now() - t0 > 30) { await new Promise(ok => setTimeout(ok, 0)); t0 = performance.now(); } }
+  }
+  function* genSymSteps(P, n = 6, opt = {}) {       // opt.edge: 'wall' or 'band' (picked at random when absent); opt.holes: how many small holes (1 = normal)
     const why = opt.why || (() => {}), holes = opt.holes ?? 1, edge = opt.edge || (Math.random() < 0.5 ? 'wall' : 'band');
     const th = 2 * Math.PI / P, even = P % 2 === 0, f0 = P === 2 ? -Math.PI / 2 : 0, AZ = ZONE_CELLS * SQ / 2;
     const rot = (a, x, y) => { const c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; };
@@ -73,7 +80,9 @@
     const W = P >= 7 ? 3 : P >= 6 ? 3.4 : 4.6, WALL = 1.6, Rc = Math.sqrt(P / 2 * AZ / 0.72 / Math.PI) + 0.8;       // with 6 to 8 nations the border layers are narrower, so there are not more neutral zones than home zones
     const FRONT = Math.max(3, Math.sqrt(Rc * Rc + 2 * AZ / th) - Rc);       // wall maps: a layer of neutral ground (about one zone) between the home ground and the common ground
     // region of a nation-0 point: -1 hole, 0 home, 1/2 border layer at the first/second edge, 3 common ground
+    let fail = '';
     for (let attempt = 0; attempt < 400; attempt++) {
+      yield { a: attempt + 1, s: 'mgRim', f: 0, fail };
       const rimW = [1, 2, 3].map(m => ({ m, a: (Math.random() - 0.5) * 0.08 })), rimAt = a => 1 + rimW.reduce((s, w) => s + w.a * Math.cos(2 * Math.PI * w.m * a / th), 0);
       const blobs = [], lake = Rc * (0.25 + Math.random() * 0.2);
       const region = (x, y, Ro) => {
@@ -88,12 +97,14 @@
       // the wedge radius that gives n home zones
       const cellsOf = Ro => { let k = 0; const R = Math.ceil(Ro * 1.1) + 2; for (let dr = -R; dr <= R; dr++) for (let dq = -2 * R; dq <= 2 * R; dq++) { const x = dq + dr / 2, y = dr * SQ / 2; if (Math.hypot(x, y) > Ro * 1.1) continue; const F = fold(x, y); if (F.g === 0 && region(F.x, F.y, Ro) === 0) k++; } return k; };
       let lo = Rc + 3, hi = Rc + 60;
-      for (let it = 0; it < 18; it++) { const mid = (lo + hi) / 2; if (cellsOf(mid) < n * ZONE_CELLS) lo = mid; else hi = mid; }
+      for (let it = 0; it < 18; it++) { const mid = (lo + hi) / 2; if (cellsOf(mid) < n * ZONE_CELLS) lo = mid; else hi = mid; yield { a: attempt + 1, s: 'mgRim', f: (it + 1) / 18 * 0.4, fail }; }
+      yield { a: attempt + 1, s: 'mgHoles', f: 0.42, fail };
       const Ro = hi;
       // small holes in the home ground and border layers, a few in the common ground
       const nb = Math.round(n * 0.5 * holes);
       for (let t = 0, k = 0; t < 200 && k < nb; t++) { const r = Rc + 1.5 + Math.random() * (Ro - Rc - 2), a = f0 + Math.random() * th; blobs.push([r * Math.cos(a), r * Math.sin(a), 0.7 + Math.random() * 0.6]); k++; }
       for (let k = 0; k < (holes > 0 ? 1 : 0) + (Math.random() < 0.5 ? 1 : 0); k++) { const r = lake + Math.random() * (Rc - lake), a = f0 + Math.random() * th; blobs.push([r * Math.cos(a), r * Math.sin(a), 0.8 + Math.random() * 0.9]); }
+      yield { a: attempt + 1, s: 'mgCells', f: 0.5, fail };
       const R1 = Ro * 1.1 + 2, cols = Math.ceil(2 * R1 + 3), rows = Math.ceil(2 * R1 / (SQ / 2) + 3) | 1;
       setGrid(cols, rows); buildCoords();
       const total = COLS * ROWS, ci = idx(cols >> 1, rows >> 1);
@@ -116,6 +127,7 @@
         }
         return s;
       };
+      yield { a: attempt + 1, s: 'mgZones', f: 0.6, fail };
       const sd = [lloyd(base[0], n), lloyd(base[1], Math.max(1, Math.round(base[1].length / ZONE_CELLS))), lloyd(base[2], Math.max(1, Math.round(base[2].length / ZONE_CELLS)))];
       // zones: nation g's copy of each seed; the common ground is one zone per two nations (or one for all)
       const key = new Map(), zh = [], zone = new Int16Array(total).fill(-1), isLand = new Uint8Array(total);
@@ -137,11 +149,12 @@
       const cc = landComponents(isLand, total), big = cc.list.reduce((a, b) => (b.length > a.length ? b : a), []);
       for (const l of cc.list) if (l !== big) for (const i of l) isLand[i] = 0;
       const cnt = new Int32Array(zh.length); for (let i = 0; i < total; i++) if (isLand[i]) cnt[zone[i]]++; else zone[i] = -1;
-      if (zh.some((h, z) => cnt[z] < (h >= 0 ? 14 : 8))) { why('small'); continue; }
+      if (zh.some((h, z) => cnt[z] < (h >= 0 ? 14 : 8))) { why('small'); fail = 'mgSmall'; continue; }
+      yield { a: attempt + 1, s: 'mgFair', f: 0.85, fail };
       const land = []; for (let i = 0; i < total; i++) if (isLand[i]) land.push(i);
       const { Z, phys } = makeZones(zh.length, zone, isLand, X, Y, land), owner = new Int16Array(total).fill(-1);
       Z.forEach((z, k) => { z.out = ZONE_OUT; if (zh[k] >= 0) { z.holder = zh[k]; z.home = zh[k]; for (const c of z.cells) owner[c] = zh[k]; } });
-      if (!symFair(Z, P, n, why)) { why('fair'); continue; }
+      if (!symFair(Z, P, n, why)) { why('fair'); fail = 'mgUnfair'; continue; }
       return { Z, zone, phys, link: Int32Array.from(phys), X, Y, land, owner, gap: narrowGaps(isLand, land, X, Y, total), K: n, gapZ: 1, edge };
     }
     throw new Error('symmetric map generation failed');
