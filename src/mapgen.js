@@ -149,6 +149,21 @@
       const cc = landComponents(isLand, total), big = cc.list.reduce((a, b) => (b.length > a.length ? b : a), []);
       for (const l of cc.list) if (l !== big) for (const i of l) isLand[i] = 0;
       const cnt = new Int32Array(zh.length); for (let i = 0; i < total; i++) if (isLand[i]) cnt[zone[i]]++; else zone[i] = -1;
+      // the copies of one zone come out a few cells apart where the grid does not turn exactly (5, 7 and 8 nations): the bigger copies give up cells at their edge
+      // (outermost first, only cells whose loss splits neither the zone nor the board), so that every nation gets the same
+      { const zc = new Map(); for (let i = 0; i < total; i++) if (isLand[i]) { const z = zone[i]; if (!zc.has(z)) zc.set(z, []); zc.get(z).push(i); }
+        const cls = new Map(); for (const [k, z] of key) { const p = k.split(':'), c = k[0] === 'c' ? 'c' : p[0] + ':' + p[2]; if (!cls.has(c)) cls.set(c, []); cls.get(c).push(z); }
+        const runs = flags => { let n = 0; for (let e = 0; e < 6; e++) if (flags[e] && !flags[(e + 5) % 6]) n++; return flags.every(x => x) ? 1 : n; };
+        const free = i => { const nb = nbrs(i), land = nb.map(j => j >= 0 && isLand[j] === 1), same = nb.map(j => j >= 0 && isLand[j] === 1 && zone[j] === zone[i]); return land.some(x => !x) && runs(land) === 1 && runs(same) === 1; };
+        for (const zs of cls.values()) {
+          if (zs.length < 2) continue;
+          const lo = Math.min(...zs.map(z => cnt[z]));
+          for (const z of zs) for (let k = cnt[z]; k > lo; k--) {
+            let bi = -1, br = -1; for (const i of zc.get(z)) if (isLand[i] && free(i)) { const r = bx[i] * bx[i] + by[i] * by[i]; if (r > br) { br = r; bi = i; } }
+            if (bi < 0) break;
+            isLand[bi] = 0; zone[bi] = -1; cnt[z]--;
+          }
+        } }
       if (zh.some((h, z) => cnt[z] < (h >= 0 ? 14 : 8))) { why('small'); fail = 'mgSmall'; continue; }
       yield { a: attempt + 1, s: 'mgFair', f: 0.85, fail };
       const land = []; for (let i = 0; i < total; i++) if (isLand[i]) land.push(i);
